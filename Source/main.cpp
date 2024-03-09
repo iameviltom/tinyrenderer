@@ -1,22 +1,22 @@
 #include "Image/TgaImage.h"
 
-#include "Maths/IntVector2.h"
+#include "Maths/Vec2.h"
 
 #include <corecrt_math.h>
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 
-void DrawLine(IntVector2 Start, IntVector2 End, TGAImage& TargetTexture, const TGAColor& Colour)
+void DrawLine(Vec2i Start, Vec2i End, TGAImage& TargetTexture, const TGAColor& Colour)
 {
 	if (Start == End)
 	{
 		return;
 	}
 
-	IntVector2 delta(End - Start);
+	Vec2i delta(End - Start);
 
-	IntVector2 absDelta = delta.Abs();
+	Vec2i absDelta = delta.Abs();
 	const bool bSteep = absDelta.Y > absDelta.X;
 	if (bSteep)
 	{
@@ -69,7 +69,7 @@ void DrawLine(IntVector2 Start, IntVector2 End, TGAImage& TargetTexture, const T
 }
 void DrawLine(int X0, int Y0, int X1, int Y1, TGAImage& TargetTexture, const TGAColor& Colour)
 {
-	DrawLine(IntVector2(X0, Y0), IntVector2(X1, Y1), TargetTexture, Colour);
+	DrawLine(Vec2i(X0, Y0), Vec2i(X1, Y1), TargetTexture, Colour);
 }
 
 int main(int argc, char** argv)
