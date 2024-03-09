@@ -15,15 +15,14 @@ void DrawLine(IntVector2 Start, IntVector2 End, TGAImage& TargetTexture, const T
 	}
 
 	IntVector2 delta(End - Start);
+
 	IntVector2 absDelta = delta.Abs();
 	const bool bSteep = absDelta.Y > absDelta.X;
-
 	if (bSteep)
 	{
 		Start = Start.SwizzleYX();
 		End = End.SwizzleYX();
 		delta = delta.SwizzleYX();
-		//absDelta = absDelta.SwizzleYX();
 	}
 
 	// make sure we draw left to right
@@ -33,65 +32,40 @@ void DrawLine(IntVector2 Start, IntVector2 End, TGAImage& TargetTexture, const T
 		delta *= -1;
 	}
 
-	float gradient = delta.Y / (float)delta.X;
-	float intercept = Start.Y - gradient * Start.X;
+	int deltaError = std::abs(delta.Y) * 2;
+	int error = 0;
 
-	for (int x = Start.X; x != End.X; ++x)
+	int y = Start.Y;
+	int ySign = delta.Y > 0 ? 1 : -1;
+
+	if (bSteep)
 	{
-		int y = (int)std::round(gradient * x + intercept);
-
-		if (bSteep)
+		for (int x = Start.X; x != End.X; ++x)
 		{
 			TargetTexture.set(y, x, Colour);
+
+			error += deltaError;
+			if (error > delta.X)
+			{
+				y += ySign;
+				error -= delta.X * 2;
+			}
 		}
-		else
+	}
+	else
+	{
+		for (int x = Start.X; x != End.X; ++x)
 		{
 			TargetTexture.set(x, y, Colour);
+
+			error += deltaError;
+			if (error > delta.X)
+			{
+				y += ySign;
+				error -= delta.X * 2;
+			}
 		}
 	}
-
-/*
-	IntVector2 delta(End - Start);
-	delta = delta.Abs();
-	delta.Y *= -1;
-
-	IntVector2 sign;
-	sign.X = (Start.X > End.X) ? -1 : 1;
-	sign.Y = (Start.Y > End.Y) ? -1 : 1;
-
-	int error = delta.X + delta.Y;
-
-	IntVector2 Point(Start);
-	while (true)
-	{
-		TargetTexture.set(Point.X, Point.Y, Colour);
-
-		if (Point == End)
-		{
-			break;
-		}
-
-		int error2 = 2 * error;
-		if (error2 >= delta.Y)
-		{
-			if (Point.X == End.X)
-			{
-				break;
-			}
-			error += delta.Y;
-			Point.X += sign.X;
-		}
-		if (error2 <= delta.X)
-		{
-			if (Point.Y == End.Y)
-			{
-				break;
-			}
-			error += delta.X;
-			Point.Y += sign.Y;
-		}
-	}
-	*/
 }
 void DrawLine(int X0, int Y0, int X1, int Y1, TGAImage& TargetTexture, const TGAColor& Colour)
 {
