@@ -5,7 +5,6 @@
 *.slo
 *.lo
 *.o
-*.obj
 
 # Precompiled Headers
 *.gch
@@ -29,6 +28,8 @@
 # Executables
 *.exe
 *.out
+
+# Misc
 *.app
 *.user
 *.filters
@@ -36,3 +37,4 @@
 /.vs
 output.tga
 /x64
+*.bak
