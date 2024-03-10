@@ -78,6 +78,9 @@ namespace TV
 			[[nodiscard]] TVec3 Abs() const { return TVec3(Abs(X), Abs(Y), Abs(Z)); }
 
 			[[nodiscard]] TVec3 Reciprocal() const { return TVec3(1 / X, 1 / Y, 1 / Z); }
+
+			[[nodiscard]] float Min() const { return TV::Maths::Min(X, Y, Z); }
+			[[nodiscard]] float Max() const { return TV::Maths::Max(X, Y, Z); }
 		};
 
 		template<class T>

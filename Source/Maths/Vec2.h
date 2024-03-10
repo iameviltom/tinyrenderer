@@ -80,5 +80,10 @@ namespace TV
 		using Vec2i = TVec2<int32>;
 		using Vec2f = TVec2<float>;
 		using Vec2d = TVec2<double>;
+
+		inline [[nodiscard]] Vec2f ToFloat(const Vec2i& vec)
+		{
+			return Vec2f((float)vec.X, (float)vec.Y);
+		}
 	}
 }
