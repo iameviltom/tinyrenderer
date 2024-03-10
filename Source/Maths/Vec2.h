@@ -6,12 +6,19 @@ template<class T>
 class TVec2
 {
 public:
-	T X = 0;
-	T Y = 0;
+	union
+	{
+		struct
+		{
+			T X;
+			T Y;
+		};
+		T Raw[2];
+	};
 
-	TVec2() {}
+	TVec2() : X(0), Y(0) {}
 	TVec2(T InX, T InY) : X(InX), Y(InY) {}
-	
+
 	bool operator == (const TVec2& Other) const
 	{
 		return X == Other.X && Y == Other.Y;
