@@ -36,7 +36,12 @@ int main(int argc, char** argv)
 			ScopedImage image(Vec2i(800));
 			DepthBuffer depthBuffer(image.Image.GetSize());
 			const Vec3f lightDir(0, 0, 1);
-			DrawModel(model, image.Image, &depthBuffer, lightDir);
+
+			TGAImage diffuse;
+			const bool bDiffuseValid = diffuse.read_tga_file("Content/african_head_diffuse.tga");
+			diffuse.flip_vertically();
+
+			DrawModel(model, bDiffuseValid ? &diffuse : nullptr, image.Image, &depthBuffer, lightDir);
 		}
 		else
 		{

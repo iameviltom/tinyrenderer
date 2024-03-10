@@ -1,6 +1,8 @@
 #pragma once
+
 #include "../Maths/Vec2.h"
-#include <assert.h>
+#include "../Maths/Assert.h"
+
 #include <cstring>
 
 namespace TV
@@ -38,10 +40,10 @@ namespace TV
 
 			void ValidatePoint(const Vec2i& point) const
 			{
-				assert(point.X >= 0);
-				assert(point.Y >= 0);
-				assert(point.X < Size.X);
-				assert(point.Y < Size.Y);
+				check(point.X >= 0);
+				check(point.Y >= 0);
+				check(point.X < Size.X);
+				check(point.Y < Size.Y);
 			}
 
 		private:

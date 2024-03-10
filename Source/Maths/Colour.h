@@ -2,6 +2,7 @@
 
 #include <xutility>
 #include "Types.h"
+#include "Maths.h"
 
 namespace TV
 {
@@ -31,6 +32,17 @@ namespace TV
 				}
 			}
 			Colour(uint8 r, uint8 g, uint8 b, uint8 a = 255) : B(b), G(g), R(r), A(a) {}
+
+			[[nodiscard]] Colour Scaled(double scale, bool bScaleAlpha = false) const
+			{
+				Colour newColour(*this);
+				for (int32 index = 0; index != (bScaleAlpha ? 4 : 3); ++index)
+				{
+					double val = Clamp(Raw[index] * scale, 0.0, 255.0);
+					newColour.Raw[index] = (uint8)val;
+				}
+				return newColour;
+			}
 
 			static [[nodiscard]] Colour MakeRandomColour()
 			{

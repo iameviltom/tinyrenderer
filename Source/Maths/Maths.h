@@ -88,6 +88,12 @@ namespace TV
 			return Max(Max(a, b), c);
 		}
 
+		template<class T>
+		inline [[nodiscard]] T Clamp(const T& a, const T& lowerBound, const T& upperBound)
+		{
+			return Min(upperBound, Max(lowerBound, a));
+		}
+
 		template<class T, class U>
 		inline [[nodiscard]] T Lerp(const T& a, const T& b, U alpha)
 		{

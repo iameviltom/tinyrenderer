@@ -5,6 +5,7 @@
 #include "../Maths/Types.h"
 #include "../Maths/Geometry.h"
 #include "DepthBuffer.h"
+#include "../Image/TgaImage.h"
 
 void TV::Renderer::DrawLine(Vec2i start, Vec2i end, ICanvas& canvas, const Colour& colour)
 {
@@ -85,9 +86,9 @@ void TV::Renderer::DrawModelWireframe(const Model& model, ICanvas& canvas, const
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
 		const Model::Tri& tri = model.GetTri(triIndex);
-		const Vec3f a = (model.GetVertex(tri.VertIndex[0]) + offset) * scale;
-		const Vec3f b = (model.GetVertex(tri.VertIndex[1]) + offset) * scale;
-		const Vec3f c = (model.GetVertex(tri.VertIndex[2]) + offset) * scale;
+		const Vec3f a = (tri.Vertices[0].Position + offset) * scale;
+		const Vec3f b = (tri.Vertices[1].Position + offset) * scale;
+		const Vec3f c = (tri.Vertices[2].Position + offset) * scale;
 
 		DrawLine(a, b, canvas, colour);
 		DrawLine(a, c, canvas, colour);
@@ -185,14 +186,14 @@ void TV::Renderer::DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, cons
 	//DrawTriangle_Barycentric(a, b, c, canvas, colour);
 }
 
-void TV::Renderer::DrawTriangle(Vec3f a, Vec3f b, Vec3f c, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour)
+void TV::Renderer::DrawTriangle(const Vertex& a, const Vertex& b, const Vertex& c, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour, const Vec3f& lightDirection)
 {
 	// get bounding box of points
 	Vec2f min, max;
-	min.X = Min(a.X, b.X, c.X);
-	min.Y = Min(a.Y, b.Y, c.Y);
-	max.X = Max(a.X, b.X, c.X);
-	max.Y = Max(a.Y, b.Y, c.Y);
+	min.X = Min(a.Position.X, b.Position.X, c.Position.X);
+	min.Y = Min(a.Position.Y, b.Position.Y, c.Position.Y);
+	max.X = Max(a.Position.X, b.Position.X, c.Position.X);
+	max.Y = Max(a.Position.Y, b.Position.Y, c.Position.Y);
 
 	// clamp to bounds of canvas
 	min.X = Max(min.X, 0.f);
@@ -200,7 +201,7 @@ void TV::Renderer::DrawTriangle(Vec3f a, Vec3f b, Vec3f c, ICanvas& canvas, Dept
 	max.X = Min(max.X, canvas.GetSize().X - 1.f);
 	max.Y = Min(max.Y, canvas.GetSize().Y - 1.f);
 
-	Vec3f points[3] = { a, b, c };
+	Vertex points[3] = { a, b, c };
 
 	const Vec2i minInt(FloorToInt(min.X), FloorToInt(min.Y));
 	const Vec2i maxInt(CeilToInt(max.X), CeilToInt(max.Y));
@@ -210,7 +211,7 @@ void TV::Renderer::DrawTriangle(Vec3f a, Vec3f b, Vec3f c, ICanvas& canvas, Dept
 		for (int32 y = minInt.Y; y != maxInt.Y; ++y)
 		{
 			const Vec2i point2D(x, y);
-			const Vec3f barycentric = ComputeBarycentricCoordinate(ToFloat(point2D), a.XY(), b.XY(), c.XY());
+			const Vec3f barycentric = ComputeBarycentricCoordinate(ToFloat(point2D), a.Position.XY(), b.Position.XY(), c.Position.XY());
 			if (barycentric.Min() <= 0.f)
 			{
 				// outside of poly
@@ -221,7 +222,7 @@ void TV::Renderer::DrawTriangle(Vec3f a, Vec3f b, Vec3f c, ICanvas& canvas, Dept
 			Vec3f point((float)x, (float)y, 0.f);
 			for (int32 index = 0; index != 3; ++index)
 			{
-				point.Z += points[index].Z * barycentric.Raw[index];
+				point.Z += points[index].Position.Z * barycentric.Raw[index];
 			}
 
 			if (depthBuffer.Get(point2D) >= point.Z)
@@ -229,46 +230,78 @@ void TV::Renderer::DrawTriangle(Vec3f a, Vec3f b, Vec3f c, ICanvas& canvas, Dept
 				continue;
 			}
 
-			canvas.SetPixel(point2D, colour);
+			Colour pointColour(colour);
+			if (diffuse != nullptr)
+			{
+				// compute tex coord from barycentric coord
+				Vec2f texCoord;
+				for (int32 index = 0; index != 3; ++index)
+				{
+					texCoord += points[index].TexCoord * barycentric.Raw[index];
+				}
+
+				const Vec2i texSample(RoundToInt(texCoord.X * diffuse->GetSize().X), RoundToInt(texCoord.Y * diffuse->GetSize().Y));
+				pointColour = diffuse->GetPixel(texSample);
+			}
+
+			// compute normal from barycentric coord
+			Vec3f normal;
+			for (int32 index = 0; index != 3; ++index)
+			{
+				normal += points[index].Normal * barycentric.Raw[index];
+			}
+			normal = normal.GetSafeNormal();
+
+			const double lightIntensity = DotProduct(normal, lightDirection);
+			if (lightIntensity <= 0.0)
+			{
+				continue;
+			}
+
+			pointColour = pointColour.Scaled(lightIntensity);
+
+			canvas.SetPixel(point2D, pointColour);
 			depthBuffer.Set(point2D, point.Z);
 		}
 	}
 }
 
-void TV::Renderer::DrawModel(const Model& model, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& lightDirection)
+void TV::Renderer::DrawModel(const Model& model, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& lightDirection)
 {
 	const Vec3f offset = model.GetBoundsMin() * -1.f;
 	const float scale = Min((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
 
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
-		const Model::Tri& tri = model.GetTri(triIndex);
-		const Vec3f a = (model.GetVertex(tri.VertIndex[0]) + offset) * scale;
-		const Vec3f b = (model.GetVertex(tri.VertIndex[1]) + offset) * scale;
-		const Vec3f c = (model.GetVertex(tri.VertIndex[2]) + offset) * scale;
-
-		const Vec3f normal = model.CalculateNormal(triIndex);
-		const double lightIntensity = DotProduct(normal, lightDirection) * -1.0;
-		if (lightIntensity <= 0.0)
+		Model::Tri tri = model.GetTri(triIndex);
+		for (Vertex& vertex : tri.Vertices)
 		{
-			continue;
+			vertex.Position += offset;
+			vertex.Position *= scale;
 		}
-
-		const uint8 colourIntensity = RoundToInt(lightIntensity * 255.0);
-		const Colour colour(colourIntensity, colourIntensity, colourIntensity);
-		//const Colour colour = Colour::MakeRandomColour();
-		//const Colour colour(255, 0, 0);
 
 		if (depthBuffer != nullptr)
 		{
-			DrawTriangle(a, b, c, canvas, *depthBuffer, colour);
+			DrawTriangle(tri.Vertices[0], tri.Vertices[1], tri.Vertices[2], diffuse, canvas, *depthBuffer, Colour(255, 255, 255), lightDirection);
 		}
 		else
 		{
+			const Vec3f normal = model.CalculateNormal(triIndex);
+			const double lightIntensity = DotProduct(normal, lightDirection) * -1.0;
+			if (lightIntensity <= 0.0)
+			{
+				continue;
+			}
+
+			const uint8 colourIntensity = RoundToInt(lightIntensity * 255.0);
+			const Colour colour(colourIntensity, colourIntensity, colourIntensity);
+			//const Colour colour = Colour::MakeRandomColour();
+			//const Colour colour(255, 0, 0);
+
 			DrawTriangle(
-				Vec2i(RoundToInt(a.X), RoundToInt(a.Y)),
-				Vec2i(RoundToInt(b.X), RoundToInt(b.Y)),
-				Vec2i(RoundToInt(c.X), RoundToInt(c.Y)),
+				Vec2i(RoundToInt(tri.Vertices[0].Position.X), RoundToInt(tri.Vertices[0].Position.Y)),
+				Vec2i(RoundToInt(tri.Vertices[1].Position.X), RoundToInt(tri.Vertices[1].Position.Y)),
+				Vec2i(RoundToInt(tri.Vertices[2].Position.X), RoundToInt(tri.Vertices[2].Position.Y)),
 				canvas, colour);
 		}
 	}

@@ -47,7 +47,7 @@ public:
 	bool flip_horizontally();
 	bool flip_vertically();
 	bool scale(int w, int h);
-	TGAColor get(int x, int y);
+	TGAColor get(int x, int y) const;
 	bool set(int x, int y, TGAColor c);
 	~TGAImage();
 	TGAImage& operator =(const TGAImage& img);
@@ -59,5 +59,5 @@ public:
 
 	virtual Vec2i GetSize() const override { return Vec2i(width, height); }
 	virtual void SetPixel(const Vec2i& Coord, const Colour& Colour) override { set(Coord.X, Coord.Y, Colour); }
-	virtual Colour GetPixel(const Vec2i& Coord) override { return get(Coord.X, Coord.Y); }
+	virtual Colour GetPixel(const Vec2i& Coord) const override { return get(Coord.X, Coord.Y); }
 };

@@ -77,6 +77,20 @@ namespace TV
 			return TVec2<T>(a.X - b.X, a.Y - b.Y);
 		}
 
+		template<class T>
+		inline [[nodiscard]] TVec2<T> operator * (const TVec2<T>& vector, float factor)
+		{
+			TVec2<T> vec(vector);
+			vec *= factor;
+			return vec;
+		}
+
+		template<class T>
+		inline [[nodiscard]] double DotProduct(const TVec2<T>& a, const TVec2<T>& b)
+		{
+			return (a.X * b.X) + (a.Y * b.Y);
+		}
+
 		using Vec2i = TVec2<int32>;
 		using Vec2f = TVec2<float>;
 		using Vec2d = TVec2<double>;

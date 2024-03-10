@@ -7,29 +7,35 @@
 
 namespace TV
 {
-	using namespace Maths;
-
 	namespace Renderer
 	{
+		using namespace Maths;
+
+		struct Vertex
+		{
+			Vec3f Position;
+			Vec2f TexCoord;
+			Vec3f Normal;
+		};
+
+		Vec3f CalculateNormal(const Vertex& a, const Vertex& b, const Vertex& c);
+
 		class Model
 		{
 		public:
 			Model() {}
 
-			bool IsValid() const { return !Vertices.empty() && !Tris.empty(); }
+			bool IsValid() const { return !Tris.empty(); }
 
 			bool LoadWavefrontFile(const char* fileName);
 
 			size_t NumTris() const { return Tris.size(); }
-			size_t NumVerts() const { return Vertices.size(); }
 
 			struct Tri
 			{
-				int VertIndex[3];
+				Vertex Vertices[3];
 			};
-			const Tri& GetTri(int32 index) const { return Tris[index]; }
-
-			const Vec3f& GetVertex(int32 index) const { return Vertices[index]; }
+			Tri GetTri(int32 index) const;
 
 			Vec3f CalculateNormal(int32 index) const;
 
@@ -40,8 +46,21 @@ namespace TV
 			Vec3f GetBoundsExtents() const { return (_Max - _Min) * 0.5f; }
 
 		private:
-			std::vector<Vec3f> Vertices;
-			std::vector<Tri> Tris;
+			std::vector<Vec3f> Positions;
+			std::vector<Vec2f> TexCoords;
+			std::vector<Vec3f> Normals;
+
+			struct VertexRef
+			{
+				int32 PosIndex = 0;
+				int32 TexCoordIndex = 0;
+				int32 NormalIndex = 0;
+			};
+			struct TriRef
+			{
+				VertexRef Vertices[3];
+			};
+			std::vector<TriRef> Tris;
 
 			Vec3f _Min;
 			Vec3f _Max;

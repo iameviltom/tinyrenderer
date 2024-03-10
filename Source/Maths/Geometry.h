@@ -7,8 +7,8 @@ namespace TV
 {
 	namespace Maths
 	{
-		Vec3f ComputeBarycentricCoordinate(const Vec2f& point, const Vec2f& a, const Vec2f& b, const Vec2f& c);
+		Vec3f ComputeBarycentricCoordinate(const Vec2f& p, const Vec2f& a, const Vec2f& b, const Vec2f& c);
 
-		bool PointInPoly2D(const Vec2f& point, const Vec2f& a, const Vec2f& b, const Vec2f& c);
+		bool PointInPoly2D(const Vec2f& p, const Vec2f& a, const Vec2f& b, const Vec2f& c);
 	}
 }
