@@ -1,9 +1,10 @@
 #include "Model.h"
 
-#include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
+
+using namespace TV::Renderer;
 
 bool Model::LoadWavefrontFile(const char* FileName)
 {

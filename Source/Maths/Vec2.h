@@ -1,67 +1,74 @@
 #pragma once
 
 #include <cstdlib>
+#include "Types.h"
 
-template<class T>
-class TVec2
+namespace TV
 {
-public:
-	union
+	namespace Maths
 	{
-		struct
+		template<class T>
+		class TVec2
 		{
-			T X;
-			T Y;
+		public:
+			union
+			{
+				struct
+				{
+					T X;
+					T Y;
+				};
+				T Raw[2];
+			};
+
+			TVec2() : X(0), Y(0) {}
+			TVec2(T inX, T inY) : X(inX), Y(inY) {}
+
+			bool operator == (const TVec2& other) const
+			{
+				return X == other.X && Y == other.Y;
+			}
+
+			TVec2& operator += (const TVec2& other)
+			{
+				X += other.X;
+				Y += other.Y;
+				return *this;
+			}
+
+			TVec2& operator -= (const TVec2& other)
+			{
+				X -= other.X;
+				Y -= other.Y;
+				return *this;
+			}
+
+			TVec2& operator *= (T factor)
+			{
+				X *= factor;
+				Y *= factor;
+				return *this;
+			}
+
+			[[nodiscard]] TVec2 SwizzleYX() const { return TVec2(Y, X); }
+
+			[[nodiscard]] TVec2 Abs() const { return TVec2(std::abs(X), std::abs(Y)); }
 		};
-		T Raw[2];
-	};
 
-	TVec2() : X(0), Y(0) {}
-	TVec2(T InX, T InY) : X(InX), Y(InY) {}
+		template<class T>
+		inline TVec2<T> operator + (const TVec2<T>& a, const TVec2<T>& b)
+		{
+			return TVec2(a.X + b.X, a.Y + b.Y);
+		}
 
-	bool operator == (const TVec2& Other) const
-	{
-		return X == Other.X && Y == Other.Y;
+		template<class T>
+		inline TVec2<T> operator - (const TVec2<T>& a, const TVec2<T>& b)
+		{
+			return TVec2<T>(a.X - b.X, a.Y - b.Y);
+		}
+
+		using Vec2i = TVec2<int32>;
+		using Vec2f = TVec2<float>;
+		using Vec2d = TVec2<double>;
 	}
-
-	TVec2& operator += (const TVec2& Other)
-	{
-		X += Other.X;
-		Y += Other.Y;
-		return *this;
-	}
-
-	TVec2& operator -= (const TVec2& Other)
-	{
-		X -= Other.X;
-		Y -= Other.Y;
-		return *this;
-	}
-
-	TVec2& operator *= (T Factor)
-	{
-		X *= Factor;
-		Y *= Factor;
-		return *this;
-	}
-
-	[[nodiscard]] TVec2 SwizzleYX() const { return TVec2(Y, X); }
-
-	[[nodiscard]] TVec2 Abs() const { return TVec2(std::abs(X), std::abs(Y)); }
-};
-
-template<class T>
-inline TVec2<T> operator + (const TVec2<T>& A, const TVec2<T>& B)
-{
-	return TVec2(A.X + B.X, A.Y + B.Y);
 }
-
-template<class T>
-inline TVec2<T> operator - (const TVec2<T>& A, const TVec2<T>& B)
-{
-	return TVec2<T>(A.X - B.X, A.Y - B.Y);
-}
-
-using Vec2i = TVec2<int>;
-using Vec2f = TVec2<float>;
-using Vec2d = TVec2<double>;

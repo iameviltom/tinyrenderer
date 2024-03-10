@@ -1,9 +1,6 @@
-#include <iostream>
-#include <fstream>
-#include <string.h>
-#include <time.h>
-#include <math.h>
 #include "tgaimage.h"
+
+#include <iostream>
 
 TGAImage::TGAImage() : data(NULL), width(0), height(0), bytespp(0) {
 }
@@ -113,13 +110,13 @@ bool TGAImage::load_rle_data(std::ifstream& in) {
 		if (chunkheader < 128) {
 			chunkheader++;
 			for (int i = 0; i < chunkheader; i++) {
-				in.read((char*)colorbuffer.raw, bytespp);
+				in.read((char*)colorbuffer.Raw, bytespp);
 				if (!in.good()) {
 					std::cerr << "an error occured while reading the header\n";
 					return false;
 				}
 				for (int t = 0; t < bytespp; t++)
-					data[currentbyte++] = colorbuffer.raw[t];
+					data[currentbyte++] = colorbuffer.Raw[t];
 				currentpixel++;
 				if (currentpixel > pixelcount) {
 					std::cerr << "Too many pixels read\n";
@@ -129,14 +126,14 @@ bool TGAImage::load_rle_data(std::ifstream& in) {
 		}
 		else {
 			chunkheader -= 127;
-			in.read((char*)colorbuffer.raw, bytespp);
+			in.read((char*)colorbuffer.Raw, bytespp);
 			if (!in.good()) {
 				std::cerr << "an error occured while reading the header\n";
 				return false;
 			}
 			for (int i = 0; i < chunkheader; i++) {
 				for (int t = 0; t < bytespp; t++)
-					data[currentbyte++] = colorbuffer.raw[t];
+					data[currentbyte++] = colorbuffer.Raw[t];
 				currentpixel++;
 				if (currentpixel > pixelcount) {
 					std::cerr << "Too many pixels read\n";
@@ -263,7 +260,7 @@ bool TGAImage::set(int x, int y, TGAColor c) {
 	if (!data || x < 0 || y < 0 || x >= width || y >= height) {
 		return false;
 	}
-	memcpy(data + (x + y * width) * bytespp, c.raw, bytespp);
+	memcpy(data + (x + y * width) * bytespp, c.Raw, bytespp);
 	return true;
 }
 

@@ -1,7 +1,8 @@
-#ifndef __IMAGE_H__
-#define __IMAGE_H__
+#pragma once
 
 #include <fstream>
+#include "../Maths/Colour.h"
+#include "../Renderer/ICanvas.h"
 
 #pragma pack(push,1)
 struct TGA_Header {
@@ -20,47 +21,11 @@ struct TGA_Header {
 };
 #pragma pack(pop)
 
+using namespace TV::Maths;
+using TGAColor = Colour;
 
-
-struct TGAColor {
-	union {
-		struct {
-			unsigned char b, g, r, a;
-		};
-		unsigned char raw[4];
-		unsigned int val;
-	};
-	int bytespp;
-
-	TGAColor() : val(0), bytespp(1) {
-	}
-
-	TGAColor(unsigned char R, unsigned char G, unsigned char B, unsigned char A) : b(B), g(G), r(R), a(A), bytespp(4) {
-	}
-
-	TGAColor(int v, int bpp) : val(v), bytespp(bpp) {
-	}
-
-	TGAColor(const TGAColor& c) : val(c.val), bytespp(c.bytespp) {
-	}
-
-	TGAColor(const unsigned char* p, int bpp) : val(0), bytespp(bpp) {
-		for (int i = 0; i < bpp; i++) {
-			raw[i] = p[i];
-		}
-	}
-
-	TGAColor& operator =(const TGAColor& c) {
-		if (this != &c) {
-			bytespp = c.bytespp;
-			val = c.val;
-		}
-		return *this;
-	}
-};
-
-
-class TGAImage {
+class TGAImage : public TV::Renderer::ICanvas
+{
 protected:
 	unsigned char* data;
 	int width;
@@ -91,6 +56,8 @@ public:
 	int get_bytespp();
 	unsigned char* buffer();
 	void clear();
-};
 
-#endif //__IMAGE_H__
+	virtual Vec2i GetSize() const override { return Vec2i(width, height); }
+	virtual void SetPixel(const Vec2i& Coord, const Colour& Colour) override { set(Coord.X, Coord.Y, Colour); }
+	virtual Colour GetPixel(const Vec2i& Coord) override { return get(Coord.X, Coord.Y); }
+};
