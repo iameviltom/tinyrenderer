@@ -15,8 +15,8 @@ bool Model::LoadWavefrontFile(const char* FileName)
 		return false;
 	}
 
-	Min = Vec3f(FLT_MAX);
-	Max = Vec3f(FLT_MAX * -1.f);
+	_Min = Vec3f(FLT_MAX);
+	_Max = Vec3f(FLT_MAX * -1.f);
 
 	std::string line;
 	while (!in.eof())
@@ -35,8 +35,8 @@ bool Model::LoadWavefrontFile(const char* FileName)
 			}
 			Vertices.push_back(v);
 
-			Min = Vec3f::Min(Min, v);
-			Max = Vec3f::Max(Max, v);
+			_Min = Min(_Min, v);
+			_Max = Max(_Max, v);
 		}
 		else if (!line.compare(0, 2, "f "))
 		{

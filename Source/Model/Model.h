@@ -30,18 +30,18 @@ namespace TV
 
 			const Vec3f& GetVertex(int index) const { return Vertices[index]; }
 
-			const Vec3f& GetBoundsMin() const { return Min; }
-			const Vec3f& GetBoundsMax() const { return Max; }
+			const Vec3f& GetBoundsMin() const { return _Min; }
+			const Vec3f& GetBoundsMax() const { return _Max; }
 
-			Vec3f GetBoundsOrigin() const { return (Max + Min) * 0.5f; }
-			Vec3f GetBoundsExtents() const { return (Max - Min) * 0.5f; }
+			Vec3f GetBoundsOrigin() const { return (_Max + _Min) * 0.5f; }
+			Vec3f GetBoundsExtents() const { return (_Max - _Min) * 0.5f; }
 
 		private:
 			std::vector<Vec3f> Vertices;
 			std::vector<Tri> Tris;
 
-			Vec3f Min;
-			Vec3f Max;
+			Vec3f _Min;
+			Vec3f _Max;
 		};
 	}
 }

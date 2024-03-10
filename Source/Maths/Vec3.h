@@ -1,8 +1,7 @@
 #pragma once
 
-#include <cstdlib>
-#include <xutility>
 #include "Types.h"
+#include "Maths.h"
 
 namespace TV
 {
@@ -24,7 +23,7 @@ namespace TV
 			};
 
 			TVec3() : X(0), Y(0), Z(0) {}
-			TVec3(T inVal) : X(inVal), Y(inVal), Z(inVal) {}
+			explicit TVec3(T inVal) : X(inVal), Y(inVal), Z(inVal) {}
 			TVec3(T inX, T inY, T inZ) : X(inX), Y(inY), Z(inZ) {}
 
 			bool operator == (const TVec3& other) const
@@ -76,37 +75,47 @@ namespace TV
 				return *this;
 			}
 
-			[[nodiscard]] TVec3 Abs() const { return TVec3(std::abs(X), std::abs(Y), std::abs(Z)); }
+			[[nodiscard]] TVec3 Abs() const { return TVec3(Abs(X), Abs(Y), Abs(Z)); }
 
 			[[nodiscard]] TVec3 Reciprocal() const { return TVec3(1 / X, 1 / Y, 1 / Z); }
-
-			template<class T>
-			static TVec3<T> Min(const TVec3<T>& a, const TVec3<T>& b)
-			{
-				return TVec3(std::min(a.X, b.X), std::min(a.Y, b.Y), std::min(a.Z, b.Z));
-			}
-
-			template<class T>
-			static TVec3<T> Max(const TVec3<T>& a, const TVec3<T>& b)
-			{
-				return TVec3(std::max(a.X, b.X), std::max(a.Y, b.Y), std::max(a.Z, b.Z));
-			}
 		};
 
 		template<class T>
-		inline TVec3<T> operator + (const TVec3<T>& a, const TVec3<T>& b)
+		inline [[nodiscard]] TVec3<T> Min(const TVec3<T>& a, const TVec3<T>& b)
+		{
+			return TVec3<T>(Min(a.X, b.X), Min(a.Y, b.Y), Min(a.Z, b.Z));
+		}
+
+		template<class T>
+		inline [[nodiscard]] TVec3<T> Max(const TVec3<T>& a, const TVec3<T>& b)
+		{
+			return TVec3<T>(Max(a.X, b.X), Max(a.Y, b.Y), Max(a.Z, b.Z));
+		}
+
+		template<class T, class U>
+		inline [[nodiscard]] TVec3<T> Lerp(const TVec3<T>& a, const TVec3<T>& b, U alpha)
+		{
+			TVec3<T> vec;
+			vec.X = Lerp(a.X, b.X, alpha);
+			vec.Y = Lerp(a.Y, b.Y, alpha);
+			vec.Z = Lerp(a.Z, b.Z, alpha);
+			return vec;
+		}
+
+		template<class T>
+		inline [[nodiscard]] TVec3<T> operator + (const TVec3<T>& a, const TVec3<T>& b)
 		{
 			return TVec3<T>(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
 		}
 
 		template<class T>
-		inline TVec3<T> operator - (const TVec3<T>& a, const TVec3<T>& b)
+		inline [[nodiscard]] TVec3<T> operator - (const TVec3<T>& a, const TVec3<T>& b)
 		{
 			return TVec3<T>(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 		}
 
 		template<class T>
-		inline TVec3<T> operator * (const TVec3<T>& vector, float factor)
+		inline [[nodiscard]] TVec3<T> operator * (const TVec3<T>& vector, float factor)
 		{
 			TVec3<T> vec(vector);
 			vec *= factor;
@@ -114,7 +123,7 @@ namespace TV
 		}
 
 		template<class T>
-		inline TVec3<T> operator * (const TVec3<T>& vector, const TVec3<T>& factor)
+		inline [[nodiscard]] TVec3<T> operator * (const TVec3<T>& vector, const TVec3<T>& factor)
 		{
 			TVec3<T> vec(vector);
 			vec *= factor;
@@ -122,7 +131,7 @@ namespace TV
 		}
 
 		template<class T>
-		inline TVec3<T> operator / (const TVec3<T>& vector, float divisor)
+		inline [[nodiscard]] TVec3<T> operator / (const TVec3<T>& vector, float divisor)
 		{
 			TVec3<T> vec(vector);
 			vec /= divisor;
@@ -130,7 +139,7 @@ namespace TV
 		}
 
 		template<class T>
-		inline TVec3<T> operator / (const TVec3<T>& vector, const TVec3<T>& divisor)
+		inline [[nodiscard]] TVec3<T> operator / (const TVec3<T>& vector, const TVec3<T>& divisor)
 		{
 			TVec3<T> vec(vector);
 			vec /= divisor;

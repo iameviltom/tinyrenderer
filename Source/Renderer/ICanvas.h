@@ -5,10 +5,10 @@
 
 namespace TV
 {
-	using namespace Maths;
-
 	namespace Renderer
 	{
+		using namespace Maths;
+
 		class ICanvas
 		{
 		public:

@@ -6,10 +6,10 @@
 
 namespace TV
 {
-	using namespace Maths;
-
 	namespace Renderer
 	{
+		using namespace Maths;
+
 		class Model;
 		class ICanvas;
 
@@ -18,5 +18,7 @@ namespace TV
 		void DrawLine(Vec3f start, Vec3f end, ICanvas& canvas, const Colour& colour);
 
 		void DrawModelWireframe(const Model& model, ICanvas& canvas, const Colour& colour);
+
+		void DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, const Colour& colour);
 	}
 }

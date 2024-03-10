@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdlib>
 #include "Types.h"
+#include "Maths.h"
 
 namespace TV
 {
@@ -22,6 +22,7 @@ namespace TV
 			};
 
 			TVec2() : X(0), Y(0) {}
+			explicit TVec2(T inVal) : X(inVal), Y(inVal) {}
 			TVec2(T inX, T inY) : X(inX), Y(inY) {}
 
 			bool operator == (const TVec2& other) const
@@ -52,17 +53,26 @@ namespace TV
 
 			[[nodiscard]] TVec2 SwizzleYX() const { return TVec2(Y, X); }
 
-			[[nodiscard]] TVec2 Abs() const { return TVec2(std::abs(X), std::abs(Y)); }
+			[[nodiscard]] TVec2 Abs() const { return TVec2(TV::Maths::Abs(X), TV::Maths::Abs(Y)); }
 		};
 
+		template<class T, class U>
+		inline [[nodiscard]] TVec2<T> Lerp(const TVec2<T>& a, const TVec2<T>& b, U alpha)
+		{
+			TVec2<T> vec;
+			vec.X = Lerp(a.X, b.X, alpha);
+			vec.Y = Lerp(a.Y, b.Y, alpha);
+			return vec;
+		}
+
 		template<class T>
-		inline TVec2<T> operator + (const TVec2<T>& a, const TVec2<T>& b)
+		inline [[nodiscard]] TVec2<T> operator + (const TVec2<T>& a, const TVec2<T>& b)
 		{
 			return TVec2(a.X + b.X, a.Y + b.Y);
 		}
 
 		template<class T>
-		inline TVec2<T> operator - (const TVec2<T>& a, const TVec2<T>& b)
+		inline [[nodiscard]] TVec2<T> operator - (const TVec2<T>& a, const TVec2<T>& b)
 		{
 			return TVec2<T>(a.X - b.X, a.Y - b.Y);
 		}
