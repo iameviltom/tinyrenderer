@@ -3,6 +3,7 @@
 #include "../Maths/Vec3.h"
 
 #include <vector>
+#include "../Maths/Types.h"
 
 namespace TV
 {
@@ -26,9 +27,11 @@ namespace TV
 			{
 				int VertIndex[3];
 			};
-			const Tri& GetTri(int index) const { return Tris[index]; }
+			const Tri& GetTri(int32 index) const { return Tris[index]; }
 
-			const Vec3f& GetVertex(int index) const { return Vertices[index]; }
+			const Vec3f& GetVertex(int32 index) const { return Vertices[index]; }
+
+			Vec3f CalculateNormal(int32 index) const;
 
 			const Vec3f& GetBoundsMin() const { return _Min; }
 			const Vec3f& GetBoundsMax() const { return _Max; }

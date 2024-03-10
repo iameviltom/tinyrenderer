@@ -30,7 +30,7 @@ namespace TV
 					Raw[index] = bytes[index];
 				}
 			}
-			Colour(uint8 r, uint8 g, uint8 b, uint8 a) : B(b), G(g), R(r), A(a) {}
+			Colour(uint8 r, uint8 g, uint8 b, uint8 a = 255) : B(b), G(g), R(r), A(a) {}
 
 			static [[nodiscard]] Colour MakeRandomColour()
 			{

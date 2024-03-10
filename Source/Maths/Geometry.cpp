@@ -5,13 +5,14 @@ TV::Maths::Vec3f TV::Maths::ComputeBarycentricCoordinate(const Vec2f& point, con
 	// https://en.wikipedia.org/wiki/Barycentric_coordinate_system
 	// https://youtu.be/HYAgJN3x4GA
 
+	const float s1 = c.Y - a.Y;
+	const float s2 = c.X - a.X;
+	const float s3 = b.Y - a.Y;
+	const float s4 = point.Y - a.Y;
+
 	Vec3f barycentric;
-	barycentric.X =
-		((c.Y - b.Y) * (point.X - c.X) + (c.X - b.X) * (point.Y - c.Y)) /
-		((b.Y - c.Y) * (a.X - c.X) + (c.X - b.X) * (a.Y - c.Y));
-	barycentric.Y =
-		((c.Y - a.Y) * (point.X - c.X) + (a.X - c.X) * (point.Y - c.Y)) /
-		((b.Y - c.Y) * (a.X - c.X) + (c.X - b.X) * (a.Y - c.Y));
+	barycentric.X = (a.X * s1 + s4 * s2 - point.X * s1) / (s3 * s2 - (b.X - a.X) * s1);
+	barycentric.Y = (s4 - barycentric.X * s3) / s1;
 	barycentric.Z = 1.f - barycentric.X - barycentric.Y;
 	return barycentric;
 }

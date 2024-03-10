@@ -33,7 +33,8 @@ int main(int argc, char** argv)
 		if (model.LoadWavefrontFile("Content/african_head.obj"))
 		{
 			ScopedImage image(Vec2i(800));
-			DrawModel(model, image.Image);
+			const Vec3f lightDir(0, 0, 1);
+			DrawModel(model, image.Image, lightDir);
 		}
 		else
 		{

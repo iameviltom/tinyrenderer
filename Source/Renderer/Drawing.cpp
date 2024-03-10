@@ -105,22 +105,11 @@ namespace TV
 			if (a.Y > c.Y) { std::swap(a, c); }
 			if (b.Y > c.Y) { std::swap(b, c); }
 
-			int32 totalHeight = c.Y - a.Y;
-			if (totalHeight == 0)
-			{
-				// this is just a horizontal line
-				const int32 minX = std::min(std::min(a.X, b.X), c.X);
-				const int32 maxX = std::max(std::max(a.X, b.X), c.X);
-				for (int32 x = minX; x <= maxX; ++x)
-				{
-					canvas.SetPixel(Vec2i(x, a.Y), colour);
-				}
-				return;
-			}
-
+			const int32 totalHeight = c.Y - a.Y;
 			const int32 topSegmentHeight = c.Y - b.Y;
 			const int32 bottomSegmentHeight = b.Y - a.Y;
 
+			// combined top and bottom halves
 			for (int32 yOffset = 0; yOffset != totalHeight; ++yOffset)
 			{
 				const bool bTopSegment = yOffset > bottomSegmentHeight || bottomSegmentHeight == 0;
@@ -141,7 +130,21 @@ namespace TV
 				{
 					std::swap(start, end);
 				}
-				for (int32 x = start.X; x != end.X; ++x)
+				for (int32 x = start.X; x <= end.X; ++x)
+				{
+					canvas.SetPixel(Vec2i(x, y), colour);
+				}
+			}
+
+			// and also fill in the middle line (maybe only needs doing in odd cases?)
+			if (totalHeight > 0)
+			{
+				const int32 y = b.Y;
+				const float alpha = (y - a.Y) / (float)totalHeight;
+				const int32 otherX = Lerp(a, c, alpha).X;
+				const int32 minX = Min(b.X, otherX);
+				const int32 maxX = Max(b.X, otherX);
+				for (int32 x = minX; x != maxX; ++x)
 				{
 					canvas.SetPixel(Vec2i(x, y), colour);
 				}
@@ -178,9 +181,10 @@ namespace TV
 void TV::Renderer::DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, const Colour& colour)
 {
 	DrawTriangle_LineFill(a, b, c, canvas, colour);
+	//DrawTriangle_Barycentric(a, b, c, canvas, colour);
 }
 
-void TV::Renderer::DrawModel(const Model& model, ICanvas& canvas)
+void TV::Renderer::DrawModel(const Model& model, ICanvas& canvas, const Vec3f& lightDirection)
 {
 	const Vec3f offset = model.GetBoundsMin() * -1.f;
 	const float scale = Min((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
@@ -192,10 +196,22 @@ void TV::Renderer::DrawModel(const Model& model, ICanvas& canvas)
 		const Vec3f b = (model.GetVertex(tri.VertIndex[1]) + offset) * scale;
 		const Vec3f c = (model.GetVertex(tri.VertIndex[2]) + offset) * scale;
 
+		const Vec3f normal = model.CalculateNormal(triIndex);
+		const double lightIntensity = DotProduct(normal, lightDirection) * -1.0;
+		if (lightIntensity <= 0.0)
+		{
+			continue;
+		}
+
+		const uint8 colourIntensity = RoundToInt(lightIntensity * 255.0);
+		const Colour colour(colourIntensity, colourIntensity, colourIntensity);
+		//const Colour colour = Colour::MakeRandomColour();
+		//const Colour colour(255, 0, 0);
+
 		DrawTriangle(
 			Vec2i(RoundToInt(a.X), RoundToInt(a.Y)),
 			Vec2i(RoundToInt(b.X), RoundToInt(b.Y)),
 			Vec2i(RoundToInt(c.X), RoundToInt(c.Y)),
-			canvas, Colour::MakeRandomColour());
+			canvas, colour);
 	}
 }

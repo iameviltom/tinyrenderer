@@ -21,6 +21,6 @@ namespace TV
 
 		void DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, const Colour& colour);
 
-		void DrawModel(const Model& model, ICanvas& canvas);
+		void DrawModel(const Model& model, ICanvas& canvas, const Vec3f& lightDirection);
 	}
 }

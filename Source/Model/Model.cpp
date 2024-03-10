@@ -58,3 +58,18 @@ bool Model::LoadWavefrontFile(const char* FileName)
 
 	return IsValid();
 }
+
+TV::Maths::Vec3f Model::CalculateNormal(int32 index) const
+{
+	const Tri& tri = GetTri(index);
+
+	const Vec3f a = GetVertex(tri.VertIndex[0]);
+	const Vec3f b = GetVertex(tri.VertIndex[1]);
+	const Vec3f c = GetVertex(tri.VertIndex[2]);
+
+	const Vec3f ba = b - a;
+	const Vec3f ca = c - a;
+
+	const Vec3f crossProduct = CrossProduct(ca, ba);
+	return crossProduct.GetSafeNormal();
+}

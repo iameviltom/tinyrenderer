@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Types.h"
+#include <cmath>
 
 namespace TV
 {
@@ -18,15 +19,19 @@ namespace TV
 			return Sign(a) * a;
 		}
 
-		inline [[nodiscard]] int32 RoundToInt(float a)
+		template<class T>
+		inline [[nodiscard]] int32 RoundToInt(T a)
 		{
-			const float sign = Sign(a);
-			const float abs = a * sign;
+			const T sign = Sign(a);
+			const T abs = a * sign;
 			const int32 base = (int32)abs;
-			const float frac = abs - (float)base;
+			const T frac = abs - (T)base;
 			const int32 absRounded = (frac >= 0.5f) ? base + 1 : base;
 			return absRounded * (int32)sign;
 		}
+
+		inline [[nodiscard]] float Sqrt(float val) { return std::sqrt(val); }
+		inline [[nodiscard]] double Sqrt(double val) { return std::sqrt(val); }
 
 		template<class T>
 		inline [[nodiscard]] T Min(const T& a, const T& b)

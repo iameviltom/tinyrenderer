@@ -79,8 +79,22 @@ namespace TV
 
 			[[nodiscard]] TVec3 Reciprocal() const { return TVec3(1 / X, 1 / Y, 1 / Z); }
 
-			[[nodiscard]] float Min() const { return TV::Maths::Min(X, Y, Z); }
-			[[nodiscard]] float Max() const { return TV::Maths::Max(X, Y, Z); }
+			[[nodiscard]] T Min() const { return TV::Maths::Min(X, Y, Z); }
+			[[nodiscard]] T Max() const { return TV::Maths::Max(X, Y, Z); }
+
+			[[nodiscard]] double Length() const { return Sqrt(X * X + Y * Y + Z * Z); }
+
+			[[nodiscard]] TVec3 GetSafeNormal() const
+			{
+				const double size = Length();
+				if (size < C_KindaSmallNumber)
+				{
+					return TVec3();
+				}
+				TVec3 vec(*this);
+				vec *= T(1.0 / size);
+				return vec;
+			}
 		};
 
 		template<class T>
@@ -147,6 +161,21 @@ namespace TV
 			TVec3<T> vec(vector);
 			vec /= divisor;
 			return vec;
+		}
+
+		template<class T>
+		inline [[nodiscard]] double DotProduct(const TVec3<T>& a, const TVec3<T>& b)
+		{
+			return (a.X * b.X) + (a.Y * b.Y) + (a.Z * b.Z);
+		}
+
+		template<class T>
+		inline [[nodiscard]] TVec3<T> CrossProduct(const TVec3<T>& a, const TVec3<T>& b)
+		{
+			return TVec3<T>(
+				a.Y * b.Z - a.Z * b.Y,
+				a.Z * b.X - a.X * b.Z,
+				a.X * b.Y - a.Y * b.X);
 		}
 
 		using Vec3i = TVec3<int32>;
