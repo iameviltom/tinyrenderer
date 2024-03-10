@@ -31,6 +31,11 @@ namespace TV
 				}
 			}
 			Colour(uint8 r, uint8 g, uint8 b, uint8 a) : B(b), G(g), R(r), A(a) {}
+
+			static [[nodiscard]] Colour MakeRandomColour()
+			{
+				return Colour(rand() % 255, rand() % 255, rand() % 255, rand() % 255);
+			}
 		};
 	}
 }

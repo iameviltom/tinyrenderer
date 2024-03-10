@@ -20,5 +20,7 @@ namespace TV
 		void DrawModelWireframe(const Model& model, ICanvas& canvas, const Colour& colour);
 
 		void DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, const Colour& colour);
+
+		void DrawModel(const Model& model, ICanvas& canvas);
 	}
 }

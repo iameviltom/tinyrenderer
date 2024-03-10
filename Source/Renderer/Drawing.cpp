@@ -79,7 +79,7 @@ void TV::Renderer::DrawLine(Vec3f start, Vec3f end, ICanvas& canvas, const Colou
 void TV::Renderer::DrawModelWireframe(const Model& model, ICanvas& canvas, const Colour& colour)
 {
 	const Vec3f offset = model.GetBoundsMin() * -1.f;
-	const float scale = std::min((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
+	const float scale = Min((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
 
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
@@ -123,7 +123,7 @@ namespace TV
 
 			for (int32 yOffset = 0; yOffset != totalHeight; ++yOffset)
 			{
-				const bool bTopSegment = yOffset > bottomSegmentHeight;
+				const bool bTopSegment = yOffset > bottomSegmentHeight || bottomSegmentHeight == 0;
 				const int32 thisOffset = bTopSegment ? yOffset - bottomSegmentHeight : yOffset;
 
 				const int32 segmentHeight = bTopSegment ? topSegmentHeight : bottomSegmentHeight;
@@ -178,4 +178,24 @@ namespace TV
 void TV::Renderer::DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, const Colour& colour)
 {
 	DrawTriangle_LineFill(a, b, c, canvas, colour);
+}
+
+void TV::Renderer::DrawModel(const Model& model, ICanvas& canvas)
+{
+	const Vec3f offset = model.GetBoundsMin() * -1.f;
+	const float scale = Min((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
+
+	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
+	{
+		const Model::Tri& tri = model.GetTri(triIndex);
+		const Vec3f a = (model.GetVertex(tri.VertIndex[0]) + offset) * scale;
+		const Vec3f b = (model.GetVertex(tri.VertIndex[1]) + offset) * scale;
+		const Vec3f c = (model.GetVertex(tri.VertIndex[2]) + offset) * scale;
+
+		DrawTriangle(
+			Vec2i(RoundToInt(a.X), RoundToInt(a.Y)),
+			Vec2i(RoundToInt(b.X), RoundToInt(b.Y)),
+			Vec2i(RoundToInt(c.X), RoundToInt(c.Y)),
+			canvas, Colour::MakeRandomColour());
+	}
 }
