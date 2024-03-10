@@ -3,6 +3,7 @@
 #include "Maths/Vec2.h"
 #include "Model/Model.h"
 #include "Renderer/Drawing.h"
+#include "Renderer/DepthBuffer.h"
 
 using namespace TV;
 using namespace Maths;
@@ -33,8 +34,9 @@ int main(int argc, char** argv)
 		if (model.LoadWavefrontFile("Content/african_head.obj"))
 		{
 			ScopedImage image(Vec2i(800));
+			DepthBuffer depthBuffer(image.Image.GetSize());
 			const Vec3f lightDir(0, 0, 1);
-			DrawModel(model, image.Image, lightDir);
+			DrawModel(model, image.Image, &depthBuffer, lightDir);
 		}
 		else
 		{

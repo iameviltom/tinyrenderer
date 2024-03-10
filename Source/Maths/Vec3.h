@@ -2,6 +2,7 @@
 
 #include "Types.h"
 #include "Maths.h"
+#include "Vec2.h"
 
 namespace TV
 {
@@ -76,6 +77,12 @@ namespace TV
 			}
 
 			[[nodiscard]] TVec3 Abs() const { return TVec3(Abs(X), Abs(Y), Abs(Z)); }
+
+			[[nodiscard]] TVec3 Floor() const { return TVec3(Floor(X), Floor(Y), Floor(Z)); }
+
+			[[nodiscard]] TVec3 Ceil() const { return TVec3(Ceil(X), Ceil(Y), Ceil(Z)); }
+
+			[[nodiscard]] TVec2<T> XY() const { return TVec2<T>(X, Y); }
 
 			[[nodiscard]] TVec3 Reciprocal() const { return TVec3(1 / X, 1 / Y, 1 / Z); }
 

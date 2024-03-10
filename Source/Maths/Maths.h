@@ -20,6 +20,37 @@ namespace TV
 		}
 
 		template<class T>
+		inline [[nodiscard]] T Floor(T a)
+		{
+			const T sign = Sign(a);
+			const T abs = sign * a;
+			const T absFloor = (T)((int32)abs);
+			return absFloor * sign;
+		}
+
+		template<class T>
+		inline [[nodiscard]] int32 FloorToInt(T a) { return (int32)Floor(a); }
+
+		template<class T>
+		inline [[nodiscard]] T Ceil(T a)
+		{
+			const T sign = Sign(a);
+			const T abs = sign * a;
+			const T absFloor = (T)((int32)abs);
+			if (abs == absFloor)
+			{
+				return a;
+			}
+			else
+			{
+				return (absFloor + 1) * sign;
+			}
+		}
+
+		template<class T>
+		inline [[nodiscard]] int32 CeilToInt(T a) { return (int32)Ceil(a); }
+
+		template<class T>
 		inline [[nodiscard]] int32 RoundToInt(T a)
 		{
 			const T sign = Sign(a);

@@ -4,6 +4,7 @@
 #include "../Model/Model.h"
 #include "../Maths/Types.h"
 #include "../Maths/Geometry.h"
+#include "DepthBuffer.h"
 
 void TV::Renderer::DrawLine(Vec2i start, Vec2i end, ICanvas& canvas, const Colour& colour)
 {
@@ -109,7 +110,7 @@ namespace TV
 			const int32 topSegmentHeight = c.Y - b.Y;
 			const int32 bottomSegmentHeight = b.Y - a.Y;
 
-			// combined top and bottom halves
+			// draw top and bottom halves
 			for (int32 yOffset = 0; yOffset != totalHeight; ++yOffset)
 			{
 				const bool bTopSegment = yOffset > bottomSegmentHeight || bottomSegmentHeight == 0;
@@ -136,7 +137,7 @@ namespace TV
 				}
 			}
 
-			// and also fill in the middle line (maybe only needs doing in odd cases?)
+			// and also fill in the middle line
 			if (totalHeight > 0)
 			{
 				const int32 y = b.Y;
@@ -184,7 +185,57 @@ void TV::Renderer::DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, cons
 	//DrawTriangle_Barycentric(a, b, c, canvas, colour);
 }
 
-void TV::Renderer::DrawModel(const Model& model, ICanvas& canvas, const Vec3f& lightDirection)
+void TV::Renderer::DrawTriangle(Vec3f a, Vec3f b, Vec3f c, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour)
+{
+	// get bounding box of points
+	Vec2f min, max;
+	min.X = Min(a.X, b.X, c.X);
+	min.Y = Min(a.Y, b.Y, c.Y);
+	max.X = Max(a.X, b.X, c.X);
+	max.Y = Max(a.Y, b.Y, c.Y);
+
+	// clamp to bounds of canvas
+	min.X = Max(min.X, 0.f);
+	min.Y = Max(min.Y, 0.f);
+	max.X = Min(max.X, canvas.GetSize().X - 1.f);
+	max.Y = Min(max.Y, canvas.GetSize().Y - 1.f);
+
+	Vec3f points[3] = { a, b, c };
+
+	const Vec2i minInt(FloorToInt(min.X), FloorToInt(min.Y));
+	const Vec2i maxInt(CeilToInt(max.X), CeilToInt(max.Y));
+
+	for (int32 x = minInt.X; x <= maxInt.X; ++x)
+	{
+		for (int32 y = minInt.Y; y != maxInt.Y; ++y)
+		{
+			const Vec2i point2D(x, y);
+			const Vec3f barycentric = ComputeBarycentricCoordinate(ToFloat(point2D), a.XY(), b.XY(), c.XY());
+			if (barycentric.Min() <= 0.f)
+			{
+				// outside of poly
+				continue;
+			}
+
+			// compute depth from barycentric coord
+			Vec3f point((float)x, (float)y, 0.f);
+			for (int32 index = 0; index != 3; ++index)
+			{
+				point.Z += points[index].Z * barycentric.Raw[index];
+			}
+
+			if (depthBuffer.Get(point2D) >= point.Z)
+			{
+				continue;
+			}
+
+			canvas.SetPixel(point2D, colour);
+			depthBuffer.Set(point2D, point.Z);
+		}
+	}
+}
+
+void TV::Renderer::DrawModel(const Model& model, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& lightDirection)
 {
 	const Vec3f offset = model.GetBoundsMin() * -1.f;
 	const float scale = Min((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
@@ -208,10 +259,17 @@ void TV::Renderer::DrawModel(const Model& model, ICanvas& canvas, const Vec3f& l
 		//const Colour colour = Colour::MakeRandomColour();
 		//const Colour colour(255, 0, 0);
 
-		DrawTriangle(
-			Vec2i(RoundToInt(a.X), RoundToInt(a.Y)),
-			Vec2i(RoundToInt(b.X), RoundToInt(b.Y)),
-			Vec2i(RoundToInt(c.X), RoundToInt(c.Y)),
-			canvas, colour);
+		if (depthBuffer != nullptr)
+		{
+			DrawTriangle(a, b, c, canvas, *depthBuffer, colour);
+		}
+		else
+		{
+			DrawTriangle(
+				Vec2i(RoundToInt(a.X), RoundToInt(a.Y)),
+				Vec2i(RoundToInt(b.X), RoundToInt(b.Y)),
+				Vec2i(RoundToInt(c.X), RoundToInt(c.Y)),
+				canvas, colour);
+		}
 	}
 }
