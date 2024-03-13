@@ -41,7 +41,20 @@ int main(int argc, char** argv)
 			const bool bDiffuseValid = diffuse.read_tga_file("Content/african_head_diffuse.tga");
 			diffuse.flip_vertically();
 
-			DrawModel(model, bDiffuseValid ? &diffuse : nullptr, image.Image, &depthBuffer, lightDir);
+			// build model matrix (hard-coded for now)
+			const Matrix4x4f modelMtx; // identity for now
+
+			// build camera matrix (hard-coded for now)
+			const Matrix4x4f cameraMtx = Matrix4x4f::MakeTranslation(Vec3f(0.f, 0.f, 3.f));
+
+			const Matrix4x4f modelViewMatrix = cameraMtx.GetInverse() * modelMtx;
+
+			// build projection matrix (hard-coded for now)
+			constexpr float cameraDistance = 3.f;
+			Matrix4x4f projectionMtx;
+			projectionMtx.M32 = -1.f / cameraDistance;
+
+			DrawModel(modelViewMatrix, projectionMtx, model, bDiffuseValid ? &diffuse : nullptr, image.Image, &depthBuffer, lightDir);
 		}
 		else
 		{

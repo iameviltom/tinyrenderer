@@ -6,6 +6,8 @@
 #include "../Maths/Geometry.h"
 #include "DepthBuffer.h"
 #include "../Image/TgaImage.h"
+#include "../Maths/Matrix4x4.h"
+#include "../Maths/Vec4.h"
 
 void TV::Renderer::DrawLine(Vec2i start, Vec2i end, ICanvas& canvas, const Colour& colour)
 {
@@ -186,22 +188,41 @@ void TV::Renderer::DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, cons
 	//DrawTriangle_Barycentric(a, b, c, canvas, colour);
 }
 
-void TV::Renderer::DrawTriangle(const Vertex& a, const Vertex& b, const Vertex& c, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour, const Vec3f& lightDirection)
+void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Vertex& a, const Vertex& b, const Vertex& c, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour, const Vec3f& lightDirection)
 {
-	// get bounding box of points
+	// project vertices to clip space
+	Vec4f clipSpacePositions[3];
+	Vec3f normalisedDeviceCoordPositions[3];
+	Vec2f screenPositions[3];
+	{
+		const Vertex* const points[3] = { &a, &b, &c };
+		const Vec2f canvasHalfSize = ToFloat(canvas.GetSize()) * 0.5f;
+
+		for (int32 index = 0; index != 3; ++index)
+		{
+			const Vec3f cameraSpacePosition = modelViewMatrix.TransformPosition(points[index]->Position);
+
+			clipSpacePositions[index] = projectionMatrix.TransformVector4(Vec4f(cameraSpacePosition, 1.f));
+
+			normalisedDeviceCoordPositions[index] = clipSpacePositions[index].GetProjection();
+
+			screenPositions[index].X = Lerp(0.f, canvasHalfSize.X, normalisedDeviceCoordPositions[index].X);
+			screenPositions[index].Y = Lerp(0.f, canvasHalfSize.Y, normalisedDeviceCoordPositions[index].Y);
+		}
+	}
+
+	// get 2D bounding box of points
 	Vec2f min, max;
-	min.X = Min(a.Position.X, b.Position.X, c.Position.X);
-	min.Y = Min(a.Position.Y, b.Position.Y, c.Position.Y);
-	max.X = Max(a.Position.X, b.Position.X, c.Position.X);
-	max.Y = Max(a.Position.Y, b.Position.Y, c.Position.Y);
+	min.X = Min(screenPositions[0].X, screenPositions[1].X, screenPositions[2].X);
+	min.X = Min(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
+	min.X = Max(screenPositions[0].X, screenPositions[1].X, screenPositions[2].X);
+	min.X = Max(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
 
 	// clamp to bounds of canvas
 	min.X = Max(min.X, 0.f);
 	min.Y = Max(min.Y, 0.f);
 	max.X = Min(max.X, canvas.GetSize().X - 1.f);
 	max.Y = Min(max.Y, canvas.GetSize().Y - 1.f);
-
-	Vertex points[3] = { a, b, c };
 
 	const Vec2i minInt(FloorToInt(min.X), FloorToInt(min.Y));
 	const Vec2i maxInt(CeilToInt(max.X), CeilToInt(max.Y));
@@ -218,14 +239,8 @@ void TV::Renderer::DrawTriangle(const Vertex& a, const Vertex& b, const Vertex& 
 				continue;
 			}
 
-			// compute depth from barycentric coord
-			Vec3f point((float)x, (float)y, 0.f);
-			for (int32 index = 0; index != 3; ++index)
-			{
-				point.Z += points[index].Position.Z * barycentric.Raw[index];
-			}
-
-			if (depthBuffer.Get(point2D) >= point.Z)
+			const float depth = ComputeValueFromBarycentric(barycentric, a.Position.Z, b.Position.Z, c.Position.Z);
+			if (depthBuffer.Get(point2D) >= depth)
 			{
 				continue;
 			}
@@ -233,23 +248,12 @@ void TV::Renderer::DrawTriangle(const Vertex& a, const Vertex& b, const Vertex& 
 			Colour pointColour(colour);
 			if (diffuse != nullptr)
 			{
-				// compute tex coord from barycentric coord
-				Vec2f texCoord;
-				for (int32 index = 0; index != 3; ++index)
-				{
-					texCoord += points[index].TexCoord * barycentric.Raw[index];
-				}
-
+				const Vec2f texCoord = ComputeValueFromBarycentric(barycentric, a.TexCoord, b.TexCoord, c.TexCoord);
 				const Vec2i texSample(RoundToInt(texCoord.X * diffuse->GetSize().X), RoundToInt(texCoord.Y * diffuse->GetSize().Y));
 				pointColour = diffuse->GetPixel(texSample);
 			}
 
-			// compute normal from barycentric coord
-			Vec3f normal;
-			for (int32 index = 0; index != 3; ++index)
-			{
-				normal += points[index].Normal * barycentric.Raw[index];
-			}
+			Vec3f normal = ComputeValueFromBarycentric(barycentric, a.Normal, b.Normal, c.Normal);
 			normal = normal.GetSafeNormal();
 
 			const double lightIntensity = DotProduct(normal, lightDirection);
@@ -261,28 +265,20 @@ void TV::Renderer::DrawTriangle(const Vertex& a, const Vertex& b, const Vertex& 
 			pointColour = pointColour.Scaled(lightIntensity);
 
 			canvas.SetPixel(point2D, pointColour);
-			depthBuffer.Set(point2D, point.Z);
+			depthBuffer.Set(point2D, depth);
 		}
 	}
 }
 
-void TV::Renderer::DrawModel(const Model& model, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& lightDirection)
+void TV::Renderer::DrawModel(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Model& model, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& lightDirection)
 {
-	const Vec3f offset = model.GetBoundsMin() * -1.f;
-	const float scale = Min((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
-
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
 		Model::Tri tri = model.GetTri(triIndex);
-		for (Vertex& vertex : tri.Vertices)
-		{
-			vertex.Position += offset;
-			vertex.Position *= scale;
-		}
 
 		if (depthBuffer != nullptr)
 		{
-			DrawTriangle(tri.Vertices[0], tri.Vertices[1], tri.Vertices[2], diffuse, canvas, *depthBuffer, Colour(255, 255, 255), lightDirection);
+			DrawTriangle(modelViewMatrix, projectionMatrix, tri.Vertices[0], tri.Vertices[1], tri.Vertices[2], diffuse, canvas, *depthBuffer, Colour(255, 255, 255), lightDirection);
 		}
 		else
 		{
