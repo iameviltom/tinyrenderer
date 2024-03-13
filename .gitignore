@@ -38,3 +38,4 @@
 output.tga
 /x64
 *.bak
+/tinyrenderer/x64
