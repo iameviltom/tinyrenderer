@@ -51,7 +51,9 @@ int main(int argc, char** argv)
 			const Matrix4x4f modelViewMatrix = invCameraMtx * modelMtx;
 
 			// build projection matrix (hard-coded for now)
-			Matrix4x4f projectionMtx = Matrix4x4f::MakeProjection();
+			constexpr float nearclip = 0.1f;
+			constexpr float farclip = 1000.f;
+			Matrix4x4f projectionMtx = Matrix4x4f::MakeProjection(nearclip, farclip);
 
 			const Vec3f cameraSpaceLightDir = invCameraMtx.TransformVector(lightDir);
 

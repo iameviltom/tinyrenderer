@@ -3,6 +3,7 @@
 #include "Types.h"
 #include "Vec3.h"
 #include "Vec4.h"
+#include "Assert.h"
 
 namespace TV
 {
@@ -70,11 +71,15 @@ namespace TV
 
 			static [[nodiscard]] TMatrix4x4<T> MakeScale(const TVec3<T>& scale);
 			static [[nodiscard]] TMatrix4x4<T> MakeTranslation(const TVec3<T>& translation);
-			static [[nodiscard]] TMatrix4x4<T> MakeProjection()
+			static [[nodiscard]] TMatrix4x4<T> MakeProjection(T nearClip, T farClip)
 			{
+				check(farClip > nearClip);
+				T clipRange = farClip - nearClip;
+
 				TMatrix4x4<T> ret;
 				ret.M32 = -1.f; // to create perspective division (i.e. to propagate division by z)
-				ret.M22 = -1.f; // to invert z, because camera looks down negative z axis
+				ret.M22 = -1.f * farClip / clipRange; // negative to invert z, because camera looks down negative z axis
+				ret.M23 = ret.M22 * nearClip; // to map z to range [0,1] i.e. normalised depth
 				return ret;
 			}
 		};

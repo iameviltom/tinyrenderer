@@ -224,7 +224,7 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 	max = max.GetClamped(Vec2f(), ToFloat(canvas.GetSize()));
 
 	const Vec2i minInt(GetFloorToInt(min.X), GetFloorToInt(min.Y));
-	const Vec2i maxInt(GetCeilToInt(max.X), GetCeilToInt(max.Y));
+	const Vec2i maxInt(GetMin(GetCeilToInt(max.X), canvas.GetSize().X - 1), GetMin(GetCeilToInt(max.Y), canvas.GetSize().Y - 1));
 
 	for (int32 x = minInt.X; x <= maxInt.X; ++x)
 	{
@@ -238,18 +238,15 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 				continue;
 			}
 
-			// camera points down negative Z so depth value will be negative, so * -1.f
-			const float rawDepth = -1.f * ComputeValueFromBarycentric(barycentric, cameraSpacePositions[0].Z, cameraSpacePositions[1].Z, cameraSpacePositions[2].Z);
-			// map depth to [0,1] where 0 is far clip, 1 is near clip
-			constexpr float nearclip = 0.1f;
-			constexpr float farclip = 1000.f;
-			const float oneMinusDepth = GetRangePct(nearclip, farclip, rawDepth);
-			if (oneMinusDepth > 1.f || oneMinusDepth < 0.f)
+			// result should be in range [0,1] where 0 = near clip, 1 = far clip
+			const float depth = ComputeValueFromBarycentric(barycentric, normalisedDeviceCoordPositions[0].Z, normalisedDeviceCoordPositions[1].Z, normalisedDeviceCoordPositions[2].Z);
+			if (depth > 1.f || depth < 0.f)
 			{
 				continue;
 			}
-			const float depth = 1.f - oneMinusDepth;
-			if (depthBuffer.Get(point2D) > depth)
+			// invert the value for the depth buffer
+			const float depthBufferVal = 1.f - depth;
+			if (depthBuffer.Get(point2D) > depthBufferVal)
 			{
 				continue;
 			}
@@ -275,7 +272,7 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 			pointColour = pointColour.Scaled(lightIntensity);
 
 			canvas.SetPixel(point2D, pointColour);
-			depthBuffer.Set(point2D, depth);
+			depthBuffer.Set(point2D, depthBufferVal);
 		}
 	}
 }
