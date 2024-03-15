@@ -41,7 +41,7 @@ namespace TV
 			}
 			[[nodiscard]] bool IsClipped() const
 			{
-				return Max(X, Y, Z) > W;
+				return GetMax(X, Y, Z) > W;
 			}
 		};
 

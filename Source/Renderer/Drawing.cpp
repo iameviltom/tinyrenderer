@@ -19,13 +19,13 @@ void TV::Renderer::DrawLine(Vec2i start, Vec2i end, ICanvas& canvas, const Colou
 
 	Vec2i delta(end - start);
 
-	Vec2i absDelta = delta.Abs();
+	Vec2i absDelta = delta.GetAbs();
 	const bool bSteep = absDelta.Y > absDelta.X;
 	if (bSteep)
 	{
-		start = start.SwizzleYX();
-		end = end.SwizzleYX();
-		delta = delta.SwizzleYX();
+		start = start.GetSwizzledYX();
+		end = end.GetSwizzledYX();
+		delta = delta.GetSwizzledYX();
 	}
 
 	// make sure we draw left to right
@@ -84,7 +84,7 @@ void TV::Renderer::DrawLine(Vec3f start, Vec3f end, ICanvas& canvas, const Colou
 void TV::Renderer::DrawModelWireframe(const Model& model, ICanvas& canvas, const Colour& colour)
 {
 	const Vec3f offset = model.GetBoundsMin() * -1.f;
-	const float scale = Min((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
+	const float scale = GetMin((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
 
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
@@ -127,8 +127,8 @@ namespace TV
 				const float alpha = thisOffset / (float)totalHeight;
 				const float beta = thisOffset / (float)segmentHeight;
 
-				Vec2i start = Lerp(a, c, bTopSegment ? 1.f - alpha : alpha);
-				Vec2i end = Lerp(bTopSegment ? c : a, b, beta);
+				Vec2i start = GetLerp(a, c, bTopSegment ? 1.f - alpha : alpha);
+				Vec2i end = GetLerp(bTopSegment ? c : a, b, beta);
 
 				// sort left to right
 				if (start.X > end.X)
@@ -146,9 +146,9 @@ namespace TV
 			{
 				const int32 y = b.Y;
 				const float alpha = (y - a.Y) / (float)totalHeight;
-				const int32 otherX = Lerp(a, c, alpha).X;
-				const int32 minX = Min(b.X, otherX);
-				const int32 maxX = Max(b.X, otherX);
+				const int32 otherX = GetLerp(a, c, alpha).X;
+				const int32 minX = GetMin(b.X, otherX);
+				const int32 maxX = GetMax(b.X, otherX);
 				for (int32 x = minX; x != maxX; ++x)
 				{
 					canvas.SetPixel(Vec2i(x, y), colour);
@@ -160,10 +160,10 @@ namespace TV
 		{
 			// get bounding box of points
 			Vec2i min, max;
-			min.X = Min(a.X, b.X, c.X);
-			min.Y = Min(a.Y, b.Y, c.Y);
-			max.X = Max(a.X, b.X, c.X);
-			max.Y = Max(a.Y, b.Y, c.Y);
+			min.X = GetMin(a.X, b.X, c.X);
+			min.Y = GetMin(a.Y, b.Y, c.Y);
+			max.X = GetMax(a.X, b.X, c.X);
+			max.Y = GetMax(a.Y, b.Y, c.Y);
 
 			Vec2f af = ToFloat(a);
 			Vec2f bf = ToFloat(b);
@@ -208,33 +208,31 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 
 			normalisedDeviceCoordPositions[index] = clipSpacePositions[index].GetProjected();
 
-			screenPositions[index] = canvasHalfSize + canvasHalfSize * normalisedDeviceCoordPositions[index].XY();
+			screenPositions[index] = canvasHalfSize + canvasHalfSize * normalisedDeviceCoordPositions[index].GetXY();
 		}
 	}
 
 	// get 2D bounding box of points
 	Vec2f min, max;
-	min.X = Min(screenPositions[0].X, screenPositions[1].X, screenPositions[2].X);
-	min.Y = Min(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
-	max.X = Max(screenPositions[0].X, screenPositions[1].X, screenPositions[2].X);
-	max.Y = Max(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
+	min.X = GetMin(screenPositions[0].X, screenPositions[1].X, screenPositions[2].X);
+	min.Y = GetMin(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
+	max.X = GetMax(screenPositions[0].X, screenPositions[1].X, screenPositions[2].X);
+	max.Y = GetMax(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
 
 	// clamp to bounds of canvas
-	min.X = Max(min.X, 0.f);
-	min.Y = Max(min.Y, 0.f);
-	max.X = Min(max.X, canvas.GetSize().X - 1.f);
-	max.Y = Min(max.Y, canvas.GetSize().Y - 1.f);
+	min = min.GetClamped(Vec2f(), ToFloat(canvas.GetSize()));
+	max = max.GetClamped(Vec2f(), ToFloat(canvas.GetSize()));
 
-	const Vec2i minInt(FloorToInt(min.X), FloorToInt(min.Y));
-	const Vec2i maxInt(CeilToInt(max.X), CeilToInt(max.Y));
+	const Vec2i minInt(GetFloorToInt(min.X), GetFloorToInt(min.Y));
+	const Vec2i maxInt(GetCeilToInt(max.X), GetCeilToInt(max.Y));
 
 	for (int32 x = minInt.X; x <= maxInt.X; ++x)
 	{
-		for (int32 y = minInt.Y; y != maxInt.Y; ++y)
+		for (int32 y = minInt.Y; y <= maxInt.Y; ++y)
 		{
 			const Vec2i point2D(x, y);
 			const Vec3f barycentric = ComputeBarycentricCoordinate(ToFloat(point2D), screenPositions[0], screenPositions[1], screenPositions[2]);
-			if (barycentric.Min() <= 0.f)
+			if (barycentric.GetMin() <= 0.f)
 			{
 				// outside of poly
 				continue;
@@ -260,7 +258,7 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 			if (diffuse != nullptr)
 			{
 				const Vec2f texCoord = ComputeValueFromBarycentric(barycentric, a.TexCoord, b.TexCoord, c.TexCoord);
-				const Vec2i texSample(RoundToInt(texCoord.X * diffuse->GetSize().X), RoundToInt(texCoord.Y * diffuse->GetSize().Y));
+				const Vec2i texSample(GetRoundToInt(texCoord.X * diffuse->GetSize().X), GetRoundToInt(texCoord.Y * diffuse->GetSize().Y));
 				pointColour = diffuse->GetPixel(texSample);
 			}
 
@@ -268,7 +266,7 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 			normal = modelViewMatrix.TransformVector(normal); // normal to camera space
 			normal = normal.GetSafeNormal();
 
-			const double lightIntensity = DotProduct(normal, cameraSpaceLightDirection);
+			const double lightIntensity = GetDotProduct(normal, cameraSpaceLightDirection);
 			if (lightIntensity <= 0.0)
 			{
 				continue;
@@ -295,21 +293,21 @@ void TV::Renderer::DrawModel(const Matrix4x4f& modelViewMatrix, const Matrix4x4f
 		else
 		{
 			const Vec3f normal = model.CalculateNormal(triIndex);
-			const double lightIntensity = DotProduct(normal, cameraSpaceLightDirection) * -1.0;
+			const double lightIntensity = GetDotProduct(normal, cameraSpaceLightDirection) * -1.0;
 			if (lightIntensity <= 0.0)
 			{
 				continue;
 			}
 
-			const uint8 colourIntensity = RoundToInt(lightIntensity * 255.0);
+			const uint8 colourIntensity = GetRoundToInt(lightIntensity * 255.0);
 			const Colour colour(colourIntensity, colourIntensity, colourIntensity);
 			//const Colour colour = Colour::MakeRandomColour();
 			//const Colour colour(255, 0, 0);
 
 			DrawTriangle(
-				Vec2i(RoundToInt(tri.Vertices[0].Position.X), RoundToInt(tri.Vertices[0].Position.Y)),
-				Vec2i(RoundToInt(tri.Vertices[1].Position.X), RoundToInt(tri.Vertices[1].Position.Y)),
-				Vec2i(RoundToInt(tri.Vertices[2].Position.X), RoundToInt(tri.Vertices[2].Position.Y)),
+				Vec2i(GetRoundToInt(tri.Vertices[0].Position.X), GetRoundToInt(tri.Vertices[0].Position.Y)),
+				Vec2i(GetRoundToInt(tri.Vertices[1].Position.X), GetRoundToInt(tri.Vertices[1].Position.Y)),
+				Vec2i(GetRoundToInt(tri.Vertices[2].Position.X), GetRoundToInt(tri.Vertices[2].Position.Y)),
 				canvas, colour);
 		}
 	}

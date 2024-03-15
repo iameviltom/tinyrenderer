@@ -38,7 +38,7 @@ namespace TV
 				Colour newColour(*this);
 				for (int32 index = 0; index != (bScaleAlpha ? 4 : 3); ++index)
 				{
-					double val = Clamp(Raw[index] * scale, 0.0, 255.0);
+					double val = GetClamped(Raw[index] * scale, 0.0, 255.0);
 					newColour.Raw[index] = (uint8)val;
 				}
 				return newColour;

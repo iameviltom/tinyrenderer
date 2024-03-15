@@ -41,8 +41,8 @@ bool Model::LoadWavefrontFile(const char* FileName)
 			}
 			Positions.push_back(v);
 
-			_Min = Min(_Min, v);
-			_Max = Max(_Max, v);
+			_Min = GetMin(_Min, v);
+			_Max = GetMax(_Max, v);
 		}
 		else if (!line.compare(0, 3, "vt "))
 		{
@@ -120,6 +120,6 @@ TV::Maths::Vec3f TV::Renderer::CalculateNormal(const Vertex& a, const Vertex& b,
 	const Vec3f ba = b.Position - a.Position;
 	const Vec3f ca = c.Position - a.Position;
 
-	const Vec3f crossProduct = CrossProduct(ca, ba);
+	const Vec3f crossProduct = GetCrossProduct(ca, ba);
 	return crossProduct.GetSafeNormal();
 }

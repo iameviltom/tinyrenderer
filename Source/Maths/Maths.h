@@ -8,33 +8,33 @@ namespace TV
 	namespace Maths
 	{
 		template<class T>
-		inline [[nodiscard]] T Sign(const T& a)
+		inline [[nodiscard]] T GetSign(const T& a)
 		{
 			return (a >= T(0)) ? T(1) : T(-1);
 		}
 
 		template<class T>
-		inline [[nodiscard]] T Abs(const T& a)
+		inline [[nodiscard]] T GetAbs(const T& a)
 		{
-			return Sign(a) * a;
+			return GetSign(a) * a;
 		}
 
 		template<class T>
-		inline [[nodiscard]] T Floor(T a)
+		inline [[nodiscard]] T GetFloor(T a)
 		{
-			const T sign = Sign(a);
+			const T sign = GetSign(a);
 			const T abs = sign * a;
 			const T absFloor = (T)((int32)abs);
 			return absFloor * sign;
 		}
 
 		template<class T>
-		inline [[nodiscard]] int32 FloorToInt(T a) { return (int32)Floor(a); }
+		inline [[nodiscard]] int32 GetFloorToInt(T a) { return (int32)GetFloor(a); }
 
 		template<class T>
-		inline [[nodiscard]] T Ceil(T a)
+		inline [[nodiscard]] T GetCeil(T a)
 		{
-			const T sign = Sign(a);
+			const T sign = GetSign(a);
 			const T abs = sign * a;
 			const T absFloor = (T)((int32)abs);
 			if (abs == absFloor)
@@ -48,12 +48,12 @@ namespace TV
 		}
 
 		template<class T>
-		inline [[nodiscard]] int32 CeilToInt(T a) { return (int32)Ceil(a); }
+		inline [[nodiscard]] int32 GetCeilToInt(T a) { return (int32)GetCeil(a); }
 
 		template<class T>
-		inline [[nodiscard]] int32 RoundToInt(T a)
+		inline [[nodiscard]] int32 GetRoundToInt(T a)
 		{
-			const T sign = Sign(a);
+			const T sign = GetSign(a);
 			const T abs = a * sign;
 			const int32 base = (int32)abs;
 			const T frac = abs - (T)base;
@@ -61,41 +61,41 @@ namespace TV
 			return absRounded * (int32)sign;
 		}
 
-		inline [[nodiscard]] float Sqrt(float val) { return std::sqrt(val); }
-		inline [[nodiscard]] double Sqrt(double val) { return std::sqrt(val); }
+		inline [[nodiscard]] float GetSqrt(float val) { return std::sqrt(val); }
+		inline [[nodiscard]] double GetSqrt(double val) { return std::sqrt(val); }
 
 		template<class T>
-		inline [[nodiscard]] T Min(const T& a, const T& b)
+		inline [[nodiscard]] T GetMin(const T& a, const T& b)
 		{
 			return (a > b) ? b : a;
 		}
 
 		template<class T>
-		inline [[nodiscard]] T Min(const T& a, const T& b, const T& c)
+		inline [[nodiscard]] T GetMin(const T& a, const T& b, const T& c)
 		{
-			return Min(Min(a, b), c);
+			return GetMin(GetMin(a, b), c);
 		}
 
 		template<class T>
-		inline [[nodiscard]] T Max(const T& a, const T& b)
+		inline [[nodiscard]] T GetMax(const T& a, const T& b)
 		{
 			return (a > b) ? a : b;
 		}
 
 		template<class T>
-		inline [[nodiscard]] T Max(const T& a, const T& b, const T& c)
+		inline [[nodiscard]] T GetMax(const T& a, const T& b, const T& c)
 		{
-			return Max(Max(a, b), c);
+			return GetMax(GetMax(a, b), c);
 		}
 
 		template<class T>
-		inline [[nodiscard]] T Clamp(const T& a, const T& lowerBound, const T& upperBound)
+		inline [[nodiscard]] T GetClamped(const T& a, const T& lowerBound, const T& upperBound)
 		{
-			return Min(upperBound, Max(lowerBound, a));
+			return GetMin(upperBound, GetMax(lowerBound, a));
 		}
 
 		template<class T, class U>
-		inline [[nodiscard]] T Lerp(const T& a, const T& b, U alpha)
+		inline [[nodiscard]] T GetLerp(const T& a, const T& b, U alpha)
 		{
 			return T(a + (b - a) * alpha);
 		}
@@ -104,7 +104,7 @@ namespace TV
 		inline [[nodiscard]] T GetRangePct(const T& a, const T& b, const T& value)
 		{
 			const T range = b - a;
-			if (Abs(range) < C_SmallNumber)
+			if (GetAbs(range) < C_SmallNumber)
 			{
 				return value > b ? (T)1 : (T)0;
 			}

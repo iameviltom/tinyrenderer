@@ -22,11 +22,11 @@ TV::Maths::Vec3f TV::Maths::ComputeBarycentricCoordinate(const Vec2f& p, const V
 	const Vec2f v1 = c - a;
 	const Vec2f v2 = p - a;
 
-	const double d00 = DotProduct(v0, v0);
-	const double d01 = DotProduct(v0, v1);
-	const double d11 = DotProduct(v1, v1);
-	const double d20 = DotProduct(v2, v0);
-	const double d21 = DotProduct(v2, v1);
+	const double d00 = GetDotProduct(v0, v0);
+	const double d01 = GetDotProduct(v0, v1);
+	const double d11 = GetDotProduct(v1, v1);
+	const double d20 = GetDotProduct(v2, v0);
+	const double d21 = GetDotProduct(v2, v1);
 
 	const double denom = d00 * d11 - d01 * d01;
 
@@ -41,5 +41,5 @@ TV::Maths::Vec3f TV::Maths::ComputeBarycentricCoordinate(const Vec2f& p, const V
 bool TV::Maths::PointInPoly2D(const Vec2f& p, const Vec2f& a, const Vec2f& b, const Vec2f& c)
 {
 	const Vec3f barycentric = ComputeBarycentricCoordinate(p, a, b, c);
-	return barycentric.Min() >= 0.f;
+	return barycentric.GetMin() >= 0.f;
 }

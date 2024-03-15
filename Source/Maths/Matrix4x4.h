@@ -68,8 +68,15 @@ namespace TV
 			[[nodiscard]] TVec3<T> TransformVector(const TVec3<T>& vector) const;
 			[[nodiscard]] TVec3<T> TransformPosition(const TVec3<T>& vector) const;
 
-			static [[nodiscard]] TMatrix4x4 MakeScale(const TVec3<T>& scale);
-			static [[nodiscard]] TMatrix4x4 MakeTranslation(const TVec3<T>& translation);
+			static [[nodiscard]] TMatrix4x4<T> MakeScale(const TVec3<T>& scale);
+			static [[nodiscard]] TMatrix4x4<T> MakeTranslation(const TVec3<T>& translation);
+			static [[nodiscard]] TMatrix4x4<T> MakeProjection()
+			{
+				TMatrix4x4<T> ret;
+				ret.M32 = -1.f; // to create perspective division (i.e. to propagate division by z)
+				ret.M22 = -1.f; // to invert z, because camera looks down negative z axis
+				return ret;
+			}
 		};
 
 		template<class T>
