@@ -2,6 +2,7 @@
 
 #include "Types.h"
 #include <cmath>
+#include <numbers>
 
 namespace TV
 {
@@ -110,5 +111,17 @@ namespace TV
 			}
 			return (value - a) / range;
 		}
+
+		inline [[nodiscard]] float GetSinRadians(float a) { return std::sinf(a); }
+		inline [[nodiscard]] double GetSinRadians(double a) { return std::sin(a); }
+
+		inline [[nodiscard]] float GetCosRadians(float a) { return std::cosf(a); }
+		inline [[nodiscard]] double GetCosRadians(double a) { return std::cos(a); }
+
+		inline [[nodiscard]] float GetTanRadians(float a) { return std::tanf(a); }
+		inline [[nodiscard]] double GetTanRadians(double a) { return std::tan(a); }
+
+		inline constexpr [[nodiscard]] float GetRadiansFromDegrees(float a) { return (float)(std::numbers::pi * a / 180.f); }
+		inline constexpr [[nodiscard]] double GetRadiansFromDegrees(double a) { return std::numbers::pi * a / 180.0; }
 	}
 }

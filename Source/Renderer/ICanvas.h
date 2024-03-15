@@ -17,6 +17,8 @@ namespace TV
 			virtual Vec2i GetSize() const = 0;
 			virtual void SetPixel(const Vec2i& coord, const Colour& colour) = 0;
 			virtual Colour GetPixel(const Vec2i& coord) const = 0;
+
+			float GetAspectRatio() const { return GetSize().X / (float)GetSize().Y; }
 		};
 	}
 }

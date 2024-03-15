@@ -4,6 +4,7 @@
 #include "Vec3.h"
 #include "Vec4.h"
 #include "Assert.h"
+#include <numbers>
 
 namespace TV
 {
@@ -71,18 +72,27 @@ namespace TV
 
 			static [[nodiscard]] TMatrix4x4<T> MakeScale(const TVec3<T>& scale);
 			static [[nodiscard]] TMatrix4x4<T> MakeTranslation(const TVec3<T>& translation);
-			static [[nodiscard]] TMatrix4x4<T> MakeProjection(T nearClip, T farClip)
-			{
-				check(farClip > nearClip);
-				T clipRange = farClip - nearClip;
-
-				TMatrix4x4<T> ret;
-				ret.M32 = -1.f; // to create perspective division (i.e. to propagate division by z)
-				ret.M22 = -1.f * farClip / clipRange; // negative to invert z, because camera looks down negative z axis
-				ret.M23 = ret.M22 * nearClip; // to map z to range [0,1] i.e. normalised depth
-				return ret;
-			}
+			static [[nodiscard]] TMatrix4x4<T> MakeProjection(T verticalFieldOfViewRadians, T aspectRatio, T nearClip, T farClip);
 		};
+
+		template<class T>
+		[[nodiscard]] TMatrix4x4<T> TV::Maths::TMatrix4x4<T>::MakeProjection(T verticalFieldOfViewRadians, T aspectRatio, T nearClip, T farClip)
+		{
+			check(farClip > nearClip);
+			check(verticalFieldOfViewRadians > 0);
+			check(verticalFieldOfViewRadians < std::numbers::pi);
+
+			const T clipRange = farClip - nearClip;
+			const T tanHalfFov = (T)GetTanRadians(verticalFieldOfViewRadians * 0.5);
+
+			TMatrix4x4<T> ret;
+			ret.M00 = (T)(1.0 / tanHalfFov);
+			ret.M11 = ret.M00 * aspectRatio;
+			ret.M32 = -1.f; // to create perspective division (i.e. to propagate division by z)
+			ret.M22 = -1.f * farClip / clipRange; // negative to invert z, because camera looks down negative z axis. Value is to map z to range [0,1] i.e. normalised depth
+			ret.M23 = ret.M22 * nearClip; // to map z to range [0,1] i.e. normalised depth
+			return ret;
+		}
 
 		template<class T>
 		TV::Maths::TVec4<T> TV::Maths::TMatrix4x4<T>::TransformVector4(const TVec4<T>& vector) const

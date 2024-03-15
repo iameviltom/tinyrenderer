@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 		Model model;
 		if (model.LoadWavefrontFile("Content/african_head.obj"))
 		{
-			ScopedImage image(Vec2i(800));
+			ScopedImage image(Vec2i(600, 800));
 			DepthBuffer depthBuffer(image.Image.GetSize());
 			const Vec3f lightDir(0, 0, 1);
 
@@ -51,9 +51,10 @@ int main(int argc, char** argv)
 			const Matrix4x4f modelViewMatrix = invCameraMtx * modelMtx;
 
 			// build projection matrix (hard-coded for now)
+			constexpr float verticalFieldOfView = GetRadiansFromDegrees(60.f);
 			constexpr float nearclip = 0.1f;
 			constexpr float farclip = 1000.f;
-			Matrix4x4f projectionMtx = Matrix4x4f::MakeProjection(nearclip, farclip);
+			Matrix4x4f projectionMtx = Matrix4x4f::MakeProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
 
 			const Vec3f cameraSpaceLightDir = invCameraMtx.TransformVector(lightDir);
 
