@@ -100,7 +100,7 @@ namespace TV
 		template<class T>
 		TV::Maths::TVec3<T> TV::Maths::TMatrix4x4<T>::TransformVector(const TVec3<T>& vector) const
 		{
-			return TransformVector4(TVec4<T>(vector, 0)).GetProjected();
+			return TransformVector4(TVec4<T>(vector, 0)).GetUnprojected();
 		}
 
 		using Matrix4x4f = TMatrix4x4<float>;
@@ -338,7 +338,7 @@ namespace TV
 					result.M[i][j] = 0;
 					for (int32 k = 0; k != 4; ++k)
 					{
-						result.M[i][j] += a.M[i][k] + b.M[k][j];
+						result.M[i][j] += a.M[i][k] * b.M[k][j];
 					}
 				}
 			}

@@ -8,6 +8,7 @@
 #include "../Image/TgaImage.h"
 #include "../Maths/Matrix4x4.h"
 #include "../Maths/Vec4.h"
+#include "../Maths/Maths.h"
 
 void TV::Renderer::DrawLine(Vec2i start, Vec2i end, ICanvas& canvas, const Colour& colour)
 {
@@ -214,9 +215,9 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 	// get 2D bounding box of points
 	Vec2f min, max;
 	min.X = Min(screenPositions[0].X, screenPositions[1].X, screenPositions[2].X);
-	min.X = Min(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
-	min.X = Max(screenPositions[0].X, screenPositions[1].X, screenPositions[2].X);
-	min.X = Max(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
+	min.Y = Min(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
+	max.X = Max(screenPositions[0].X, screenPositions[1].X, screenPositions[2].X);
+	max.Y = Max(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
 
 	// clamp to bounds of canvas
 	min.X = Max(min.X, 0.f);
@@ -232,15 +233,25 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 		for (int32 y = minInt.Y; y != maxInt.Y; ++y)
 		{
 			const Vec2i point2D(x, y);
-			const Vec3f barycentric = ComputeBarycentricCoordinate(ToFloat(point2D), a.Position.XY(), b.Position.XY(), c.Position.XY());
+			const Vec3f barycentric = ComputeBarycentricCoordinate(ToFloat(point2D), screenPositions[0], screenPositions[1], screenPositions[2]);
 			if (barycentric.Min() <= 0.f)
 			{
 				// outside of poly
 				continue;
 			}
 
-			const float depth = ComputeValueFromBarycentric(barycentric, cameraSpacePositions[0].Z, cameraSpacePositions[1].Z, cameraSpacePositions[2].Z);
-			if (depthBuffer.Get(point2D) >= depth)
+			// camera points down negative Z so depth value will be negative, so * -1.f
+			const float rawDepth = -1.f * ComputeValueFromBarycentric(barycentric, cameraSpacePositions[0].Z, cameraSpacePositions[1].Z, cameraSpacePositions[2].Z);
+			// map depth to [0,1] where 0 is far clip, 1 is near clip
+			constexpr float nearclip = 0.1f;
+			constexpr float farclip = 1000.f;
+			const float oneMinusDepth = GetRangePct(nearclip, farclip, rawDepth);
+			if (oneMinusDepth > 1.f || oneMinusDepth < 0.f)
+			{
+				continue;
+			}
+			const float depth = 1.f - oneMinusDepth;
+			if (depthBuffer.Get(point2D) > depth)
 			{
 				continue;
 			}

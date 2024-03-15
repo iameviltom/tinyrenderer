@@ -99,5 +99,16 @@ namespace TV
 		{
 			return T(a + (b - a) * alpha);
 		}
+
+		template<class T>
+		inline [[nodiscard]] T GetRangePct(const T& a, const T& b, const T& value)
+		{
+			const T range = b - a;
+			if (Abs(range) < C_SmallNumber)
+			{
+				return value > b ? (T)1 : (T)0;
+			}
+			return (value - a) / range;
+		}
 	}
 }
