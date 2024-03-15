@@ -116,5 +116,10 @@ namespace TV
 		{
 			return Vec2f((float)vec.X, (float)vec.Y);
 		}
+
+		inline [[nodiscard]] Vec2i GetRoundToInt(const Vec2f& vec)
+		{
+			return Vec2i(GetRoundToInt(vec.X), GetRoundToInt(vec.Y));
+		}
 	}
 }

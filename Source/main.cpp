@@ -28,76 +28,57 @@ int main(int argc, char** argv)
 		TGAImage Image;
 	};
 
-	if (true)
+	Model model;
+	if (model.LoadWavefrontFile("Content/african_head.obj"))
 	{
-		Model model;
-		if (model.LoadWavefrontFile("Content/african_head.obj"))
+		ScopedImage image(Vec2i(600, 800));
+		DepthBuffer depthBuffer(image.Image.GetSize());
+
+		RenderContext context;
 		{
-			ScopedImage image(Vec2i(600, 800));
-			DepthBuffer depthBuffer(image.Image.GetSize());
-
-			TGAImage diffuse;
-			const bool bDiffuseValid = diffuse.read_tga_file("Content/african_head_diffuse.tga");
-			diffuse.flip_vertically();
-
-			// build model matrix
-			const Matrix4x4f modelMtx; // identity for now
+			context.Canvas = &image.Image;
+			context.DepthBuffer = &depthBuffer;
 
 			// build camera matrix
 			const Vec3f cameraPos(1.f, 1.f, 3.f);
 			const Matrix4x4f cameraMtx = Matrix4x4f::MakeLookAt(cameraPos, Vec3f(), Vec3f::UpVector);
-			const Matrix4x4f invCameraMtx = cameraMtx.GetInverse();
-
-			const Matrix4x4f modelViewMatrix = invCameraMtx * modelMtx;
+			context.ViewMatrix = cameraMtx.GetInverse();
 
 			// build projection matrix
 			constexpr float nearclip = 0.1f;
 			constexpr float farclip = 1000.f;
 			constexpr bool bOrthographic = false;
-			Matrix4x4f projectionMtx;
 			if (bOrthographic)
 			{
 				constexpr float orthoWidth = 2.f;
-				projectionMtx = Matrix4x4f::MakeOrthographicProjection(orthoWidth, image.Image.GetAspectRatio(), nearclip, farclip);
+				context.ProjectionMatrix = Matrix4x4f::MakeOrthographicProjection(orthoWidth, image.Image.GetAspectRatio(), nearclip, farclip);
 			}
 			else
 			{
 				constexpr float verticalFieldOfView = GetRadiansFromDegrees(30.f);
-				projectionMtx = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
+				context.ProjectionMatrix = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
 			}
 
+			// lighting
 			const Vec3f lightDir(1.f, 1.f, 1.f);
-			const Vec3f cameraSpaceLightDir = invCameraMtx.TransformVector(lightDir);
+			context.CameraSpaceLightDirection = context.ViewMatrix.TransformVector(lightDir);
+		}
 
-			DrawModel(modelViewMatrix, projectionMtx, model, bDiffuseValid ? &diffuse : nullptr, image.Image, &depthBuffer, cameraSpaceLightDir);
-		}
-		else
-		{
-			ScopedImage image(Vec2i(200));
+		TGAImage diffuse;
+		const bool bDiffuseValid = diffuse.read_tga_file("Content/african_head_diffuse.tga");
+		diffuse.flip_vertically();
 
-			Vec2i t0[3] = { Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80) };
-			Vec2i t1[3] = { Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180) };
-			Vec2i t2[3] = { Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180) };
-			DrawTriangle(t0[0], t0[1], t0[2], image.Image, red);
-			DrawTriangle(t1[0], t1[1], t1[2], image.Image, white);
-			DrawTriangle(t2[0], t2[1], t2[2], image.Image, green);
-		}
-	}
-	else
-	{
-		Model model;
-		if (model.LoadWavefrontFile("Content/african_head.obj"))
+		RenderParams params;
 		{
-			ScopedImage image(Vec2i(800));
-			DrawModelWireframe(model, image.Image, white);
+			if (bDiffuseValid)
+			{
+				params.Diffuse = &diffuse;
+			}
+			params.Colour = white;
 		}
-		else
-		{
-			ScopedImage image(Vec2i(100));
-			DrawLine(13, 20, 80, 40, image.Image, white);
-			DrawLine(20, 13, 40, 80, image.Image, red);
-			DrawLine(80, 40, 13, 20, image.Image, red);
-		}
+
+		DrawModel(model, context, params);
+		DrawModelWireframe(model, context, params);
 	}
 
 	return 0;

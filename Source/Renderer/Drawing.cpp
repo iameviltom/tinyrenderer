@@ -76,26 +76,42 @@ void TV::Renderer::DrawLine(int32 x0, int32 y0, int32 x1, int32 y1, ICanvas& can
 	DrawLine(Vec2i(x0, y0), Vec2i(x1, y1), canvas, colour);
 }
 
-void TV::Renderer::DrawLine(Vec3f start, Vec3f end, ICanvas& canvas, const Colour& colour)
+void TV::Renderer::DrawLine(const RenderContext& context, const RenderParams& params, const Vec3f& start, const Vec3f& end)
 {
-	DrawLine((int32)start.X, (int32)start.Y, (int32)end.X, (int32)end.Y, canvas, colour);
+	check(context.IsValid());
+
+	Vec2f screenPositions[2];
+	{
+		const Vec3f* const points[2] = { &start, &end };
+		const Vec2f canvasHalfSize = ToFloat(context.Canvas->GetSize()) * 0.5f;
+
+		for (int32 index = 0; index != 2; ++index)
+		{
+			const Vec3f worldSpacePos = params.Matrix.TransformPosition(*points[index]);
+			const Vec3f cameraSpacePos = context.ViewMatrix.TransformPosition(worldSpacePos);
+			const Vec4f clipSpacePos = context.ProjectionMatrix.TransformVector4(Vec4f(cameraSpacePos, 1.f));
+			const Vec3f normalisedDevicePose = clipSpacePos.GetProjected();
+
+			screenPositions[index] = canvasHalfSize + canvasHalfSize * normalisedDevicePose.GetXY();
+		}
+	}
+
+	// todo: bounds checking?
+	DrawLine(GetRoundToInt(screenPositions[0]), GetRoundToInt(screenPositions[1]), *context.Canvas, params.Colour);
 }
 
-void TV::Renderer::DrawModelWireframe(const Model& model, ICanvas& canvas, const Colour& colour)
+void TV::Renderer::DrawModelWireframe(const Model& model, const RenderContext& context, const RenderParams& params)
 {
-	const Vec3f offset = model.GetBoundsMin() * -1.f;
-	const float scale = GetMin((float)canvas.GetSize().X / model.GetBoundsExtents().X, (float)canvas.GetSize().Y / model.GetBoundsExtents().Y) * 0.5f;
-
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
 		const Model::Tri& tri = model.GetTri(triIndex);
-		const Vec3f a = (tri.Vertices[0].Position + offset) * scale;
-		const Vec3f b = (tri.Vertices[1].Position + offset) * scale;
-		const Vec3f c = (tri.Vertices[2].Position + offset) * scale;
+		const Vec3f a = tri.Vertices[0].Position;
+		const Vec3f b = tri.Vertices[1].Position;
+		const Vec3f c = tri.Vertices[2].Position;
 
-		DrawLine(a, b, canvas, colour);
-		DrawLine(a, c, canvas, colour);
-		DrawLine(b, c, canvas, colour);
+		DrawLine(context, params, a, b);
+		DrawLine(context, params, a, c);
+		DrawLine(context, params, b, c);
 	}
 }
 
@@ -189,22 +205,26 @@ void TV::Renderer::DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, cons
 	//DrawTriangle_Barycentric(a, b, c, canvas, colour);
 }
 
-void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Vertex& a, const Vertex& b, const Vertex& c, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour, const Vec3f& cameraSpaceLightDirection)
+void TV::Renderer::DrawTriangle(const RenderContext& context, const RenderParams& params, const Vertex& a, const Vertex& b, const Vertex& c)
 {
-	// project vertices to clip space
+	check(context.IsValid());
+
+	Vec3f worldSpacePositions[3];
 	Vec3f cameraSpacePositions[3];
 	Vec4f clipSpacePositions[3];
 	Vec3f normalisedDeviceCoordPositions[3];
 	Vec2f screenPositions[3];
 	{
 		const Vertex* const points[3] = { &a, &b, &c };
-		const Vec2f canvasHalfSize = ToFloat(canvas.GetSize()) * 0.5f;
+		const Vec2f canvasHalfSize = ToFloat(context.Canvas->GetSize()) * 0.5f;
 
 		for (int32 index = 0; index != 3; ++index)
 		{
-			cameraSpacePositions[index] = modelViewMatrix.TransformPosition(points[index]->Position);
+			worldSpacePositions[index] = params.Matrix.TransformPosition(points[index]->Position);
 
-			clipSpacePositions[index] = projectionMatrix.TransformVector4(Vec4f(cameraSpacePositions[index], 1.f));
+			cameraSpacePositions[index] = context.ViewMatrix.TransformPosition(worldSpacePositions[index]);
+
+			clipSpacePositions[index] = context.ProjectionMatrix.TransformVector4(Vec4f(cameraSpacePositions[index], 1.f));
 
 			normalisedDeviceCoordPositions[index] = clipSpacePositions[index].GetProjected();
 
@@ -220,11 +240,11 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 	max.Y = GetMax(screenPositions[0].Y, screenPositions[1].Y, screenPositions[2].Y);
 
 	// clamp to bounds of canvas
-	min = min.GetClamped(Vec2f(), ToFloat(canvas.GetSize()));
-	max = max.GetClamped(Vec2f(), ToFloat(canvas.GetSize()));
+	min = min.GetClamped(Vec2f(), ToFloat(context.Canvas->GetSize()));
+	max = max.GetClamped(Vec2f(), ToFloat(context.Canvas->GetSize()));
 
 	const Vec2i minInt(GetFloorToInt(min.X), GetFloorToInt(min.Y));
-	const Vec2i maxInt(GetMin(GetCeilToInt(max.X), canvas.GetSize().X - 1), GetMin(GetCeilToInt(max.Y), canvas.GetSize().Y - 1));
+	const Vec2i maxInt(GetMin(GetCeilToInt(max.X), context.Canvas->GetSize().X - 1), GetMin(GetCeilToInt(max.Y), context.Canvas->GetSize().Y - 1));
 
 	for (int32 x = minInt.X; x <= maxInt.X; ++x)
 	{
@@ -246,24 +266,25 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 			}
 			// remap value for depth buffer such that 0 = far clip, 1 = near clip
 			float depthBufferVal = 1.f - ((depth * 0.5f) + 0.5f);
-			if (depthBuffer.Get(point2D) > depthBufferVal)
+			if (context.DepthBuffer->Get(point2D) > depthBufferVal)
 			{
 				continue;
 			}
 
-			Colour pointColour(colour);
-			if (diffuse != nullptr)
+			Colour pointColour(params.Colour);
+			if (params.Diffuse != nullptr)
 			{
 				const Vec2f texCoord = ComputeValueFromBarycentric(barycentric, a.TexCoord, b.TexCoord, c.TexCoord);
-				const Vec2i texSample(GetRoundToInt(texCoord.X * diffuse->GetSize().X), GetRoundToInt(texCoord.Y * diffuse->GetSize().Y));
-				pointColour = diffuse->GetPixel(texSample);
+				const Vec2i texSample(GetRoundToInt(texCoord.X * params.Diffuse->GetSize().X), GetRoundToInt(texCoord.Y * params.Diffuse->GetSize().Y));
+				pointColour = params.Diffuse->GetPixel(texSample);
 			}
 
 			Vec3f normal = ComputeValueFromBarycentric(barycentric, a.Normal, b.Normal, c.Normal);
-			normal = modelViewMatrix.TransformVector(normal); // normal to camera space
+			normal = params.Matrix.TransformVector(normal); // normal to world space
+			normal = context.ViewMatrix.TransformVector(normal); // normal to camera space
 			normal = normal.GetSafeNormal();
 
-			const double lightIntensity = GetDotProduct(normal, cameraSpaceLightDirection);
+			const double lightIntensity = GetDotProduct(normal, context.CameraSpaceLightDirection);
 			if (lightIntensity <= 0.0)
 			{
 				continue;
@@ -271,41 +292,17 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 
 			pointColour = pointColour.Scaled(lightIntensity);
 
-			canvas.SetPixel(point2D, pointColour);
-			depthBuffer.Set(point2D, depthBufferVal);
+			context.Canvas->SetPixel(point2D, pointColour);
+			context.DepthBuffer->Set(point2D, depthBufferVal);
 		}
 	}
 }
 
-void TV::Renderer::DrawModel(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Model& model, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& cameraSpaceLightDirection)
+void TV::Renderer::DrawModel(const Model& model, const RenderContext& context, const RenderParams& params)
 {
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
 		Model::Tri tri = model.GetTri(triIndex);
-
-		if (depthBuffer != nullptr)
-		{
-			DrawTriangle(modelViewMatrix, projectionMatrix, tri.Vertices[0], tri.Vertices[1], tri.Vertices[2], diffuse, canvas, *depthBuffer, Colour(255, 255, 255), cameraSpaceLightDirection);
-		}
-		else
-		{
-			const Vec3f normal = model.CalculateNormal(triIndex);
-			const double lightIntensity = GetDotProduct(normal, cameraSpaceLightDirection) * -1.0;
-			if (lightIntensity <= 0.0)
-			{
-				continue;
-			}
-
-			const uint8 colourIntensity = GetRoundToInt(lightIntensity * 255.0);
-			const Colour colour(colourIntensity, colourIntensity, colourIntensity);
-			//const Colour colour = Colour::MakeRandomColour();
-			//const Colour colour(255, 0, 0);
-
-			DrawTriangle(
-				Vec2i(GetRoundToInt(tri.Vertices[0].Position.X), GetRoundToInt(tri.Vertices[0].Position.Y)),
-				Vec2i(GetRoundToInt(tri.Vertices[1].Position.X), GetRoundToInt(tri.Vertices[1].Position.Y)),
-				Vec2i(GetRoundToInt(tri.Vertices[2].Position.X), GetRoundToInt(tri.Vertices[2].Position.Y)),
-				canvas, colour);
-		}
+		DrawTriangle(context, params, tri.Vertices[0], tri.Vertices[1], tri.Vertices[2]);
 	}
 }
