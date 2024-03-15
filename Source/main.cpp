@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 			constexpr float verticalFieldOfView = GetRadiansFromDegrees(60.f);
 			constexpr float nearclip = 0.1f;
 			constexpr float farclip = 1000.f;
-			Matrix4x4f projectionMtx = Matrix4x4f::MakeProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
+			Matrix4x4f projectionMtx = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
 
 			const Vec3f cameraSpaceLightDir = invCameraMtx.TransformVector(lightDir);
 

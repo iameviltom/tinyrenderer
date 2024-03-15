@@ -238,14 +238,14 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 				continue;
 			}
 
-			// result should be in range [0,1] where 0 = near clip, 1 = far clip
+			// result should be in range [-1,1] where -1 = near clip, 1 = far clip
 			const float depth = ComputeValueFromBarycentric(barycentric, normalisedDeviceCoordPositions[0].Z, normalisedDeviceCoordPositions[1].Z, normalisedDeviceCoordPositions[2].Z);
-			if (depth > 1.f || depth < 0.f)
+			if (depth > 1.f || depth < -1.f)
 			{
 				continue;
 			}
-			// invert the value for the depth buffer
-			const float depthBufferVal = 1.f - depth;
+			// remap value for depth buffer such that 0 = far clip, 1 = near clip
+			float depthBufferVal = 1.f - ((depth * 0.5f) + 0.5f);
 			if (depthBuffer.Get(point2D) > depthBufferVal)
 			{
 				continue;
