@@ -17,6 +17,7 @@ namespace TV
 		public:
 			union
 			{
+				// indices are row then column
 				struct
 				{
 					T M00;
@@ -73,7 +74,47 @@ namespace TV
 			static [[nodiscard]] TMatrix4x4<T> MakeScale(const TVec3<T>& scale);
 			static [[nodiscard]] TMatrix4x4<T> MakeTranslation(const TVec3<T>& translation);
 			static [[nodiscard]] TMatrix4x4<T> MakePerspectiveProjection(T verticalFieldOfViewRadians, T aspectRatio, T nearClip, T farClip);
+			static [[nodiscard]] TMatrix4x4<T> MakeOrthographicProjection(T orthographicWidth, T aspectRatio, T nearClip, T farClip);
+			static [[nodiscard]] TMatrix4x4<T> MakeLookAt(const TVec3<T>& lookOrigin, const TVec3<T>& lookTarget, const TVec3<T>& upVector);
 		};
+
+		template<class T>
+		[[nodiscard]] TMatrix4x4<T> TV::Maths::TMatrix4x4<T>::MakeLookAt(const TVec3<T>& lookOrigin, const TVec3<T>& lookTarget, const TVec3<T>& upVector)
+		{
+			const TVec3<T> z = (lookOrigin - lookTarget).GetSafeNormal();
+			const TVec3<T> x = GetCrossProduct(upVector, z).GetSafeNormal();
+			const TVec3<T> y = GetCrossProduct(z, x).GetSafeNormal();
+
+			TMatrix4x4<T> mtx(MakeTranslation(lookOrigin));
+			for (int32 i = 0; i != 3; ++i)
+			{
+				mtx.M[i][0] = x.Raw[i];
+				mtx.M[i][1] = y.Raw[i];
+				mtx.M[i][2] = z.Raw[i];
+			}
+
+			return mtx;
+		}
+
+		template<class T>
+		[[nodiscard]] TMatrix4x4<T> TV::Maths::TMatrix4x4<T>::MakeOrthographicProjection(T orthographicWidth, T aspectRatio, T nearClip, T farClip)
+		{
+			// https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/orthographic-projection-matrix.html
+
+			check(farClip > nearClip);
+			check(orthographicWidth > 0);
+			check(aspectRatio > 0);
+
+			const T clipRange = farClip - nearClip;
+
+			TMatrix4x4<T> ret;
+
+			ret.M00 = 2.f / orthographicWidth;
+			ret.M11 = ret.M00 * aspectRatio;
+			ret.M22 = -2.f / clipRange; // mapping z to [-1,1]
+			ret.M23 = (-1.f * farClip + nearClip) / clipRange;
+			return ret;
+		}
 
 		template<class T>
 		[[nodiscard]] TMatrix4x4<T> TV::Maths::TMatrix4x4<T>::MakePerspectiveProjection(T verticalFieldOfViewRadians, T aspectRatio, T nearClip, T farClip)
@@ -81,6 +122,7 @@ namespace TV
 			check(farClip > nearClip);
 			check(verticalFieldOfViewRadians > 0);
 			check(verticalFieldOfViewRadians < std::numbers::pi);
+			check(aspectRatio > 0);
 
 			const T clipRange = farClip - nearClip;
 			const T tanHalfFov = (T)GetTanRadians(verticalFieldOfViewRadians * 0.5);
@@ -105,18 +147,10 @@ namespace TV
 		TV::Maths::TVec4<T> TV::Maths::TMatrix4x4<T>::TransformVector4(const TVec4<T>& vector) const
 		{
 			TVec4<T> ret;
-			// todo!!! row vs column major uncertainty here...
-#if 0
-			ret.Raw[0] = vector.Raw[0] * M[0][0] + vector.Raw[1] * M[1][0] + vector.Raw[2] * M[2][0] + vector.Raw[3] * M[3][0];
-			ret.Raw[1] = vector.Raw[0] * M[0][1] + vector.Raw[1] * M[1][1] + vector.Raw[2] * M[2][1] + vector.Raw[3] * M[3][1];
-			ret.Raw[2] = vector.Raw[0] * M[0][2] + vector.Raw[1] * M[1][2] + vector.Raw[2] * M[2][2] + vector.Raw[3] * M[3][2];
-			ret.Raw[3] = vector.Raw[0] * M[0][3] + vector.Raw[1] * M[1][3] + vector.Raw[2] * M[2][3] + vector.Raw[3] * M[3][3];
-#else
 			ret.Raw[0] = vector.Raw[0] * M[0][0] + vector.Raw[1] * M[0][1] + vector.Raw[2] * M[0][2] + vector.Raw[3] * M[0][3];
 			ret.Raw[1] = vector.Raw[0] * M[1][0] + vector.Raw[1] * M[1][1] + vector.Raw[2] * M[1][2] + vector.Raw[3] * M[1][3];
 			ret.Raw[2] = vector.Raw[0] * M[2][0] + vector.Raw[1] * M[2][1] + vector.Raw[2] * M[2][2] + vector.Raw[3] * M[2][3];
 			ret.Raw[3] = vector.Raw[0] * M[3][0] + vector.Raw[1] * M[3][1] + vector.Raw[2] * M[3][2] + vector.Raw[3] * M[3][3];
-#endif
 			return ret;
 		}
 

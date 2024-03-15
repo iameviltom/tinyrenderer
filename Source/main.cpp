@@ -35,27 +35,38 @@ int main(int argc, char** argv)
 		{
 			ScopedImage image(Vec2i(600, 800));
 			DepthBuffer depthBuffer(image.Image.GetSize());
-			const Vec3f lightDir(0, 0, 1);
 
 			TGAImage diffuse;
 			const bool bDiffuseValid = diffuse.read_tga_file("Content/african_head_diffuse.tga");
 			diffuse.flip_vertically();
 
-			// build model matrix (hard-coded for now)
+			// build model matrix
 			const Matrix4x4f modelMtx; // identity for now
 
-			// build camera matrix (hard-coded for now)
-			const Matrix4x4f cameraMtx = Matrix4x4f::MakeTranslation(Vec3f(0.f, 0.f, 1.f));
+			// build camera matrix
+			const Vec3f cameraPos(1.f, 1.f, 3.f);
+			const Matrix4x4f cameraMtx = Matrix4x4f::MakeLookAt(cameraPos, Vec3f(), Vec3f::UpVector);
 			const Matrix4x4f invCameraMtx = cameraMtx.GetInverse();
 
 			const Matrix4x4f modelViewMatrix = invCameraMtx * modelMtx;
 
-			// build projection matrix (hard-coded for now)
-			constexpr float verticalFieldOfView = GetRadiansFromDegrees(60.f);
+			// build projection matrix
 			constexpr float nearclip = 0.1f;
 			constexpr float farclip = 1000.f;
-			Matrix4x4f projectionMtx = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
+			constexpr bool bOrthographic = false;
+			Matrix4x4f projectionMtx;
+			if (bOrthographic)
+			{
+				constexpr float orthoWidth = 2.f;
+				projectionMtx = Matrix4x4f::MakeOrthographicProjection(orthoWidth, image.Image.GetAspectRatio(), nearclip, farclip);
+			}
+			else
+			{
+				constexpr float verticalFieldOfView = GetRadiansFromDegrees(30.f);
+				projectionMtx = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
+			}
 
+			const Vec3f lightDir(1.f, 1.f, 1.f);
 			const Vec3f cameraSpaceLightDir = invCameraMtx.TransformVector(lightDir);
 
 			DrawModel(modelViewMatrix, projectionMtx, model, bDiffuseValid ? &diffuse : nullptr, image.Image, &depthBuffer, cameraSpaceLightDir);

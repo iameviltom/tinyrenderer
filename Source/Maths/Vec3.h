@@ -27,6 +27,8 @@ namespace TV
 			explicit TVec3(T inVal) : X(inVal), Y(inVal), Z(inVal) {}
 			TVec3(T inX, T inY, T inZ) : X(inX), Y(inY), Z(inZ) {}
 
+			static const TVec3<T> UpVector;
+
 			bool operator == (const TVec3& other) const
 			{
 				return X == other.X && Y == other.Y && Z == other.Z;
@@ -103,6 +105,9 @@ namespace TV
 				return vec;
 			}
 		};
+
+		template<class T>
+		__declspec(selectany) const TVec3<T> TV::Maths::TVec3<T>::UpVector(0, 1, 0);
 
 		template<class T>
 		inline [[nodiscard]] TVec3<T> GetMin(const TVec3<T>& a, const TVec3<T>& b)
