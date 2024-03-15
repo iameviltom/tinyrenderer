@@ -46,15 +46,18 @@ int main(int argc, char** argv)
 
 			// build camera matrix (hard-coded for now)
 			const Matrix4x4f cameraMtx = Matrix4x4f::MakeTranslation(Vec3f(0.f, 0.f, 3.f));
+			const Matrix4x4f invCameraMtx = cameraMtx.GetInverse();
 
-			const Matrix4x4f modelViewMatrix = cameraMtx.GetInverse() * modelMtx;
+			const Matrix4x4f modelViewMatrix = invCameraMtx * modelMtx;
 
 			// build projection matrix (hard-coded for now)
 			constexpr float cameraDistance = 3.f;
 			Matrix4x4f projectionMtx;
 			projectionMtx.M32 = -1.f / cameraDistance;
 
-			DrawModel(modelViewMatrix, projectionMtx, model, bDiffuseValid ? &diffuse : nullptr, image.Image, &depthBuffer, lightDir);
+			const Vec3f cameraSpaceLightDir = invCameraMtx.TransformVector(lightDir);
+
+			DrawModel(modelViewMatrix, projectionMtx, model, bDiffuseValid ? &diffuse : nullptr, image.Image, &depthBuffer, cameraSpaceLightDir);
 		}
 		else
 		{

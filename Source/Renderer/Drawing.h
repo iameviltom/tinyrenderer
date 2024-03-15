@@ -25,8 +25,8 @@ namespace TV
 		void DrawModelWireframe(const Model& model, ICanvas& canvas, const Colour& colour);
 
 		void DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, const Colour& colour);
-		void DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Vertex& a, const Vertex& b, const Vertex& c, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour, const Vec3f& lightDirection);
+		void DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Vertex& a, const Vertex& b, const Vertex& c, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour, const Vec3f& cameraSpaceLightDirection);
 
-		void DrawModel(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Model& model, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& lightDirection);
+		void DrawModel(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Model& model, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& cameraSpaceLightDirection);
 	}
 }

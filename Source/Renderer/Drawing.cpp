@@ -188,9 +188,10 @@ void TV::Renderer::DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, cons
 	//DrawTriangle_Barycentric(a, b, c, canvas, colour);
 }
 
-void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Vertex& a, const Vertex& b, const Vertex& c, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour, const Vec3f& lightDirection)
+void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Vertex& a, const Vertex& b, const Vertex& c, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer& depthBuffer, const Colour& colour, const Vec3f& cameraSpaceLightDirection)
 {
 	// project vertices to clip space
+	Vec3f cameraSpacePositions[3];
 	Vec4f clipSpacePositions[3];
 	Vec3f normalisedDeviceCoordPositions[3];
 	Vec2f screenPositions[3];
@@ -200,14 +201,13 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 
 		for (int32 index = 0; index != 3; ++index)
 		{
-			const Vec3f cameraSpacePosition = modelViewMatrix.TransformPosition(points[index]->Position);
+			cameraSpacePositions[index] = modelViewMatrix.TransformPosition(points[index]->Position);
 
-			clipSpacePositions[index] = projectionMatrix.TransformVector4(Vec4f(cameraSpacePosition, 1.f));
+			clipSpacePositions[index] = projectionMatrix.TransformVector4(Vec4f(cameraSpacePositions[index], 1.f));
 
-			normalisedDeviceCoordPositions[index] = clipSpacePositions[index].GetProjection();
+			normalisedDeviceCoordPositions[index] = clipSpacePositions[index].GetProjected();
 
-			screenPositions[index].X = Lerp(0.f, canvasHalfSize.X, normalisedDeviceCoordPositions[index].X);
-			screenPositions[index].Y = Lerp(0.f, canvasHalfSize.Y, normalisedDeviceCoordPositions[index].Y);
+			screenPositions[index] = canvasHalfSize + canvasHalfSize * normalisedDeviceCoordPositions[index].XY();
 		}
 	}
 
@@ -239,7 +239,7 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 				continue;
 			}
 
-			const float depth = ComputeValueFromBarycentric(barycentric, a.Position.Z, b.Position.Z, c.Position.Z);
+			const float depth = ComputeValueFromBarycentric(barycentric, cameraSpacePositions[0].Z, cameraSpacePositions[1].Z, cameraSpacePositions[2].Z);
 			if (depthBuffer.Get(point2D) >= depth)
 			{
 				continue;
@@ -254,9 +254,10 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 			}
 
 			Vec3f normal = ComputeValueFromBarycentric(barycentric, a.Normal, b.Normal, c.Normal);
+			normal = modelViewMatrix.TransformVector(normal); // normal to camera space
 			normal = normal.GetSafeNormal();
 
-			const double lightIntensity = DotProduct(normal, lightDirection);
+			const double lightIntensity = DotProduct(normal, cameraSpaceLightDirection);
 			if (lightIntensity <= 0.0)
 			{
 				continue;
@@ -270,7 +271,7 @@ void TV::Renderer::DrawTriangle(const Matrix4x4f& modelViewMatrix, const Matrix4
 	}
 }
 
-void TV::Renderer::DrawModel(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Model& model, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& lightDirection)
+void TV::Renderer::DrawModel(const Matrix4x4f& modelViewMatrix, const Matrix4x4f& projectionMatrix, const Model& model, const TGAImage* diffuse, ICanvas& canvas, DepthBuffer* depthBuffer, const Vec3f& cameraSpaceLightDirection)
 {
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
@@ -278,12 +279,12 @@ void TV::Renderer::DrawModel(const Matrix4x4f& modelViewMatrix, const Matrix4x4f
 
 		if (depthBuffer != nullptr)
 		{
-			DrawTriangle(modelViewMatrix, projectionMatrix, tri.Vertices[0], tri.Vertices[1], tri.Vertices[2], diffuse, canvas, *depthBuffer, Colour(255, 255, 255), lightDirection);
+			DrawTriangle(modelViewMatrix, projectionMatrix, tri.Vertices[0], tri.Vertices[1], tri.Vertices[2], diffuse, canvas, *depthBuffer, Colour(255, 255, 255), cameraSpaceLightDirection);
 		}
 		else
 		{
 			const Vec3f normal = model.CalculateNormal(triIndex);
-			const double lightIntensity = DotProduct(normal, lightDirection) * -1.0;
+			const double lightIntensity = DotProduct(normal, cameraSpaceLightDirection) * -1.0;
 			if (lightIntensity <= 0.0)
 			{
 				continue;

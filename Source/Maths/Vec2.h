@@ -51,6 +51,13 @@ namespace TV
 				return *this;
 			}
 
+			TVec2& operator *= (TVec2 factor)
+			{
+				X *= factor.X;
+				Y *= factor.Y;
+				return *this;
+			}
+
 			[[nodiscard]] TVec2 SwizzleYX() const { return TVec2(Y, X); }
 
 			[[nodiscard]] TVec2 Abs() const { return TVec2(TV::Maths::Abs(X), TV::Maths::Abs(Y)); }
@@ -68,7 +75,7 @@ namespace TV
 		template<class T>
 		inline [[nodiscard]] TVec2<T> operator + (const TVec2<T>& a, const TVec2<T>& b)
 		{
-			return TVec2(a.X + b.X, a.Y + b.Y);
+			return TVec2<T>(a.X + b.X, a.Y + b.Y);
 		}
 
 		template<class T>
@@ -79,6 +86,14 @@ namespace TV
 
 		template<class T>
 		inline [[nodiscard]] TVec2<T> operator * (const TVec2<T>& vector, float factor)
+		{
+			TVec2<T> vec(vector);
+			vec *= factor;
+			return vec;
+		}
+
+		template<class T>
+		inline [[nodiscard]] TVec2<T> operator * (const TVec2<T>& vector, const TVec2<T>& factor)
 		{
 			TVec2<T> vec(vector);
 			vec *= factor;

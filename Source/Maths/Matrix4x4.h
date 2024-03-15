@@ -94,13 +94,13 @@ namespace TV
 		template<class T>
 		TV::Maths::TVec3<T> TV::Maths::TMatrix4x4<T>::TransformPosition(const TVec3<T>& vector) const
 		{
-			return TransformVector4(TVec4<T>(vector, 1)).GetProjection();
+			return TransformVector4(TVec4<T>(vector, 1)).GetProjected();
 		}
 
 		template<class T>
 		TV::Maths::TVec3<T> TV::Maths::TMatrix4x4<T>::TransformVector(const TVec3<T>& vector) const
 		{
-			return TransformVector4(TVec4<T>(vector, 0)).GetProjection();
+			return TransformVector4(TVec4<T>(vector, 0)).GetProjected();
 		}
 
 		using Matrix4x4f = TMatrix4x4<float>;

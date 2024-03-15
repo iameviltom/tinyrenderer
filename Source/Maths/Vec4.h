@@ -26,7 +26,7 @@ namespace TV
 			TVec4(T inX, T inY, T inZ) : X(inX), Y(inY), Z(inZ), W(1) {}
 			TVec4(const TVec3<T>& vec3, T inW = 1) : X(vec3.X), Y(vec3.Y), Z(vec3.Z), W(inW) {}
 
-			[[nodiscard]] TVec3<T> GetProjection() const
+			[[nodiscard]] TVec3<T> GetProjected() const
 			{
 				const T invW = 1 / W;
 				TVec3<T> ret;
