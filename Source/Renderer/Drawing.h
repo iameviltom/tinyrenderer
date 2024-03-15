@@ -16,6 +16,7 @@ namespace TV
 		class Model;
 		class ICanvas;
 		class DepthBuffer;
+		class Shader;
 		struct Vertex;
 
 		struct RenderContext
@@ -32,6 +33,7 @@ namespace TV
 		struct RenderParams
 		{
 			Matrix4x4f Matrix;
+			Shader* Shader = nullptr;
 			ICanvas* Diffuse = nullptr;
 			Colour Colour;
 		};

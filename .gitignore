@@ -33,7 +33,6 @@
 *.app
 *.user
 *.filters
-*.vcxproj
 /.vs
 output.tga
 /x64

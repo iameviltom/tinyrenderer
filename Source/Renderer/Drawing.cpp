@@ -9,6 +9,7 @@
 #include "../Maths/Matrix4x4.h"
 #include "../Maths/Vec4.h"
 #include "../Maths/Maths.h"
+#include "Shader.h"
 
 void TV::Renderer::DrawLine(Vec2i start, Vec2i end, ICanvas& canvas, const Colour& colour)
 {
@@ -209,25 +210,38 @@ void TV::Renderer::DrawTriangle(const RenderContext& context, const RenderParams
 {
 	check(context.IsValid());
 
-	Vec3f worldSpacePositions[3];
-	Vec3f cameraSpacePositions[3];
-	Vec4f clipSpacePositions[3];
+	static const Shader DefaultShader;
+
+	const Shader& shader = (params.Shader != nullptr) ? *params.Shader : DefaultShader;
+
+	VertexShaderOutput vertices[3];
+	{
+		VertexShaderConstants constants;
+		constants.ModelMatrix = params.Matrix;
+		constants.ViewMatrix = context.ViewMatrix;
+		constants.ProjectionMatrix = context.ProjectionMatrix;
+
+		const Vertex* const points[3] = { &a, &b, &c };
+		for (int32 index = 0; index != 3; ++index)
+		{
+			VertexShaderInput input;
+			input.Position = points[index]->Position;
+			input.Normal = points[index]->Normal;
+			input.TexCoord = points[index]->TexCoord;
+
+			vertices[index] = shader.VertexShader(input, constants);
+		}
+	}
+
 	Vec3f normalisedDeviceCoordPositions[3];
 	Vec2f screenPositions[3];
 	{
-		const Vertex* const points[3] = { &a, &b, &c };
 		const Vec2f canvasHalfSize = ToFloat(context.Canvas->GetSize()) * 0.5f;
 
 		for (int32 index = 0; index != 3; ++index)
 		{
-			worldSpacePositions[index] = params.Matrix.TransformPosition(points[index]->Position);
-
-			cameraSpacePositions[index] = context.ViewMatrix.TransformPosition(worldSpacePositions[index]);
-
-			clipSpacePositions[index] = context.ProjectionMatrix.TransformVector4(Vec4f(cameraSpacePositions[index], 1.f));
-
-			normalisedDeviceCoordPositions[index] = clipSpacePositions[index].GetProjected();
-
+			// todo: need to solve the divide by zero case here via proper clipping
+			normalisedDeviceCoordPositions[index] = vertices[index].Position.GetProjected();
 			screenPositions[index] = canvasHalfSize + canvasHalfSize * normalisedDeviceCoordPositions[index].GetXY();
 		}
 	}
@@ -245,6 +259,10 @@ void TV::Renderer::DrawTriangle(const RenderContext& context, const RenderParams
 
 	const Vec2i minInt(GetFloorToInt(min.X), GetFloorToInt(min.Y));
 	const Vec2i maxInt(GetMin(GetCeilToInt(max.X), context.Canvas->GetSize().X - 1), GetMin(GetCeilToInt(max.Y), context.Canvas->GetSize().Y - 1));
+
+	PixelShaderConstants constants;
+	constants.LightDirection = context.CameraSpaceLightDirection;
+	constants.Diffuse = params.Diffuse;
 
 	for (int32 x = minInt.X; x <= maxInt.X; ++x)
 	{
@@ -271,28 +289,14 @@ void TV::Renderer::DrawTriangle(const RenderContext& context, const RenderParams
 				continue;
 			}
 
-			Colour pointColour(params.Colour);
-			if (params.Diffuse != nullptr)
-			{
-				const Vec2f texCoord = ComputeValueFromBarycentric(barycentric, a.TexCoord, b.TexCoord, c.TexCoord);
-				const Vec2i texSample(GetRoundToInt(texCoord.X * params.Diffuse->GetSize().X), GetRoundToInt(texCoord.Y * params.Diffuse->GetSize().Y));
-				pointColour = params.Diffuse->GetPixel(texSample);
-			}
+			PixelShaderInput input;
+			input.TexCoord = ComputeValueFromBarycentric(barycentric, vertices[0].TexCoord, vertices[1].TexCoord, vertices[2].TexCoord);
+			input.Normal = ComputeValueFromBarycentric(barycentric, vertices[0].Normal, vertices[1].Normal, vertices[2].Normal).GetSafeNormal();
+			input.Colour = params.Colour;
 
-			Vec3f normal = ComputeValueFromBarycentric(barycentric, a.Normal, b.Normal, c.Normal);
-			normal = params.Matrix.TransformVector(normal); // normal to world space
-			normal = context.ViewMatrix.TransformVector(normal); // normal to camera space
-			normal = normal.GetSafeNormal();
+			const PixelShaderOutput output = shader.PixelShader(input, constants);
 
-			const double lightIntensity = GetDotProduct(normal, context.CameraSpaceLightDirection);
-			if (lightIntensity <= 0.0)
-			{
-				continue;
-			}
-
-			pointColour = pointColour.Scaled(lightIntensity);
-
-			context.Canvas->SetPixel(point2D, pointColour);
+			context.Canvas->SetPixel(point2D, output.Colour);
 			context.DepthBuffer->Set(point2D, depthBufferVal);
 		}
 	}
