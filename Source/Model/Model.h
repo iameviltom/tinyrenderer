@@ -4,6 +4,7 @@
 
 #include <vector>
 #include "../Maths/Types.h"
+#include "../Renderer/Vertex.h"
 
 namespace TV
 {
@@ -11,33 +12,27 @@ namespace TV
 	{
 		using namespace Maths;
 
-		struct Vertex
-		{
-			Vec3f Position;
-			Vec2f TexCoord;
-			Vec3f Normal;
-		};
-
-		Vec3f CalculateNormal(const Vertex& a, const Vertex& b, const Vertex& c);
-
 		class Model
 		{
 		public:
 			Model() {}
 
-			bool IsValid() const { return !Tris.empty(); }
+			bool IsValid() const { return !Triangles.empty() && !Vertices.empty(); }
 
 			bool LoadWavefrontFile(const char* fileName);
 
-			size_t NumTris() const { return Tris.size(); }
+			int32 NumTris() const { return (int32)Triangles.size(); }
+			int32 NumVertices() const { return (int32)Vertices.size(); }
 
 			struct Tri
 			{
-				Vertex Vertices[3];
+				int32 VertexIndex[3];
 			};
-			Tri GetTri(int32 index) const;
+			const Tri& GetTri(int32 index) const { return Triangles[index]; }
 
-			Vec3f CalculateNormal(int32 index) const;
+			const Vertex& GetVertex(int32 index) const { return Vertices[index]; }
+
+			Vec3f CalculateNormal(int32 triIndex) const;
 
 			const Vec3f& GetBoundsMin() const { return _Min; }
 			const Vec3f& GetBoundsMax() const { return _Max; }
@@ -46,21 +41,8 @@ namespace TV
 			Vec3f GetBoundsExtents() const { return (_Max - _Min) * 0.5f; }
 
 		private:
-			std::vector<Vec3f> Positions;
-			std::vector<Vec2f> TexCoords;
-			std::vector<Vec3f> Normals;
-
-			struct VertexRef
-			{
-				int32 PosIndex = 0;
-				int32 TexCoordIndex = 0;
-				int32 NormalIndex = 0;
-			};
-			struct TriRef
-			{
-				VertexRef Vertices[3];
-			};
-			std::vector<TriRef> Tris;
+			std::vector<Vertex> Vertices;
+			std::vector<Tri> Triangles;
 
 			Vec3f _Min;
 			Vec3f _Max;

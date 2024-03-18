@@ -4,6 +4,7 @@
 #include "Model/Model.h"
 #include "Renderer/Drawing.h"
 #include "Renderer/DepthBuffer.h"
+#include "Renderer/Shader.h"
 
 using namespace TV;
 using namespace Maths;
@@ -35,50 +36,46 @@ int main(int argc, char** argv)
 		DepthBuffer depthBuffer(image.Image.GetSize());
 
 		RenderContext context;
+		context.Canvas = &image.Image;
+		context.DepthBuffer = &depthBuffer;
+
+		Shader_SimpleLitDiffuse shader;
+
+		// build camera matrix
+		const Vec3f cameraPos(1.f, 1.f, 3.f);
+		const Matrix4x4f cameraMtx = Matrix4x4f::MakeLookAt(cameraPos, Vec3f(), Vec3f::UpVector);
+		shader.ViewMatrix = cameraMtx.GetInverse();
+
+		// build projection matrix
+		constexpr float nearclip = 0.1f;
+		constexpr float farclip = 1000.f;
+		constexpr bool bOrthographic = false;
+		if (bOrthographic)
 		{
-			context.Canvas = &image.Image;
-			context.DepthBuffer = &depthBuffer;
-
-			// build camera matrix
-			const Vec3f cameraPos(1.f, 1.f, 3.f);
-			const Matrix4x4f cameraMtx = Matrix4x4f::MakeLookAt(cameraPos, Vec3f(), Vec3f::UpVector);
-			context.ViewMatrix = cameraMtx.GetInverse();
-
-			// build projection matrix
-			constexpr float nearclip = 0.1f;
-			constexpr float farclip = 1000.f;
-			constexpr bool bOrthographic = false;
-			if (bOrthographic)
-			{
-				constexpr float orthoWidth = 2.f;
-				context.ProjectionMatrix = Matrix4x4f::MakeOrthographicProjection(orthoWidth, image.Image.GetAspectRatio(), nearclip, farclip);
-			}
-			else
-			{
-				constexpr float verticalFieldOfView = GetRadiansFromDegrees(30.f);
-				context.ProjectionMatrix = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
-			}
-
-			// lighting
-			const Vec3f lightDir(1.f, 1.f, 1.f);
-			context.CameraSpaceLightDirection = context.ViewMatrix.TransformVector(lightDir);
+			constexpr float orthoWidth = 2.f;
+			shader.ProjectionMatrix = Matrix4x4f::MakeOrthographicProjection(orthoWidth, image.Image.GetAspectRatio(), nearclip, farclip);
+		}
+		else
+		{
+			constexpr float verticalFieldOfView = GetRadiansFromDegrees(30.f);
+			shader.ProjectionMatrix = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
 		}
 
 		TGAImage diffuse;
 		const bool bDiffuseValid = diffuse.read_tga_file("Content/african_head_diffuse.tga");
 		diffuse.flip_vertically();
-
-		RenderParams params;
+		if (bDiffuseValid)
 		{
-			if (bDiffuseValid)
-			{
-				params.Diffuse = &diffuse;
-			}
-			params.Colour = white;
+			shader.Diffuse = &diffuse;
 		}
 
-		DrawModel(model, context, params);
-		DrawModelWireframe(model, context, params);
+		shader.BaseColour = white;
+
+		const Vec3f lightDir(1.f, 1.f, 1.f);
+		shader.LightDirection = shader.ViewMatrix.TransformVector(lightDir);
+
+		DrawModel(model, context, shader);
+		DrawModelWireframe(model, context, shader, white);
 	}
 
 	return 0;

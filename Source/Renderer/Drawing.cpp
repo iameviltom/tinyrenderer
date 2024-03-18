@@ -77,42 +77,39 @@ void TV::Renderer::DrawLine(int32 x0, int32 y0, int32 x1, int32 y1, ICanvas& can
 	DrawLine(Vec2i(x0, y0), Vec2i(x1, y1), canvas, colour);
 }
 
-void TV::Renderer::DrawLine(const RenderContext& context, const RenderParams& params, const Vec3f& start, const Vec3f& end)
+void TV::Renderer::DrawModelWireframe(const Model& model, const RenderContext& context, IShader& shader, const Colour& colour)
 {
-	check(context.IsValid());
-
-	Vec2f screenPositions[2];
+	if (!context.IsValid())
 	{
-		const Vec3f* const points[2] = { &start, &end };
-		const Vec2f canvasHalfSize = ToFloat(context.Canvas->GetSize()) * 0.5f;
-
-		for (int32 index = 0; index != 2; ++index)
-		{
-			const Vec3f worldSpacePos = params.Matrix.TransformPosition(*points[index]);
-			const Vec3f cameraSpacePos = context.ViewMatrix.TransformPosition(worldSpacePos);
-			const Vec4f clipSpacePos = context.ProjectionMatrix.TransformVector4(Vec4f(cameraSpacePos, 1.f));
-			const Vec3f normalisedDevicePose = clipSpacePos.GetProjected();
-
-			screenPositions[index] = canvasHalfSize + canvasHalfSize * normalisedDevicePose.GetXY();
-		}
+		return;
 	}
 
-	// todo: bounds checking?
-	DrawLine(GetRoundToInt(screenPositions[0]), GetRoundToInt(screenPositions[1]), *context.Canvas, params.Colour);
-}
+	shader.Init(model.NumVertices());
 
-void TV::Renderer::DrawModelWireframe(const Model& model, const RenderContext& context, const RenderParams& params)
-{
+	for (int32 vertexIndex = 0; vertexIndex != model.NumVertices(); ++vertexIndex)
+	{
+		shader.ExecuteVertexShader(model.GetVertex(vertexIndex));
+	}
+
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
 		const Model::Tri& tri = model.GetTri(triIndex);
-		const Vec3f a = tri.Vertices[0].Position;
-		const Vec3f b = tri.Vertices[1].Position;
-		const Vec3f c = tri.Vertices[2].Position;
 
-		DrawLine(context, params, a, b);
-		DrawLine(context, params, a, c);
-		DrawLine(context, params, b, c);
+		Vec3f normalisedDeviceCoordPositions[3];
+		Vec2i screenPositions[3];
+		{
+			const Vec2f canvasHalfSize = ToFloat(context.Canvas->GetSize()) * 0.5f;
+			for (int32 index = 0; index != 3; ++index)
+			{
+				// todo: need to solve the divide by zero case here via proper clipping
+				normalisedDeviceCoordPositions[index] = shader.GetClipSpaceVertexPosition(tri.VertexIndex[index]).GetProjected();
+				screenPositions[index] = GetRoundToInt(canvasHalfSize + canvasHalfSize * normalisedDeviceCoordPositions[index].GetXY());
+			}
+		}
+
+		DrawLine(screenPositions[0], screenPositions[1], *context.Canvas, colour);
+		DrawLine(screenPositions[0], screenPositions[2], *context.Canvas, colour);
+		DrawLine(screenPositions[1], screenPositions[2], *context.Canvas, colour);
 	}
 }
 
@@ -206,42 +203,19 @@ void TV::Renderer::DrawTriangle(Vec2i a, Vec2i b, Vec2i c, ICanvas& canvas, cons
 	//DrawTriangle_Barycentric(a, b, c, canvas, colour);
 }
 
-void TV::Renderer::DrawTriangle(const RenderContext& context, const RenderParams& params, const Vertex& a, const Vertex& b, const Vertex& c)
+void TV::Renderer::DrawTriangle(const RenderContext& context, IShader& shader, int32 vertexIndexA, int32 vertexIndexB, int32 vertexIndexC)
 {
 	check(context.IsValid());
-
-	static const Shader DefaultShader;
-
-	const Shader& shader = (params.Shader != nullptr) ? *params.Shader : DefaultShader;
-
-	VertexShaderOutput vertices[3];
-	{
-		VertexShaderConstants constants;
-		constants.ModelMatrix = params.Matrix;
-		constants.ViewMatrix = context.ViewMatrix;
-		constants.ProjectionMatrix = context.ProjectionMatrix;
-
-		const Vertex* const points[3] = { &a, &b, &c };
-		for (int32 index = 0; index != 3; ++index)
-		{
-			VertexShaderInput input;
-			input.Position = points[index]->Position;
-			input.Normal = points[index]->Normal;
-			input.TexCoord = points[index]->TexCoord;
-
-			vertices[index] = shader.VertexShader(input, constants);
-		}
-	}
 
 	Vec3f normalisedDeviceCoordPositions[3];
 	Vec2f screenPositions[3];
 	{
 		const Vec2f canvasHalfSize = ToFloat(context.Canvas->GetSize()) * 0.5f;
-
+		const int32 indices[3] = { vertexIndexA, vertexIndexB, vertexIndexC };
 		for (int32 index = 0; index != 3; ++index)
 		{
 			// todo: need to solve the divide by zero case here via proper clipping
-			normalisedDeviceCoordPositions[index] = vertices[index].Position.GetProjected();
+			normalisedDeviceCoordPositions[index] = shader.GetClipSpaceVertexPosition(indices[index]).GetProjected();
 			screenPositions[index] = canvasHalfSize + canvasHalfSize * normalisedDeviceCoordPositions[index].GetXY();
 		}
 	}
@@ -259,10 +233,6 @@ void TV::Renderer::DrawTriangle(const RenderContext& context, const RenderParams
 
 	const Vec2i minInt(GetFloorToInt(min.X), GetFloorToInt(min.Y));
 	const Vec2i maxInt(GetMin(GetCeilToInt(max.X), context.Canvas->GetSize().X - 1), GetMin(GetCeilToInt(max.Y), context.Canvas->GetSize().Y - 1));
-
-	PixelShaderConstants constants;
-	constants.LightDirection = context.CameraSpaceLightDirection;
-	constants.Diffuse = params.Diffuse;
 
 	for (int32 x = minInt.X; x <= maxInt.X; ++x)
 	{
@@ -289,24 +259,33 @@ void TV::Renderer::DrawTriangle(const RenderContext& context, const RenderParams
 				continue;
 			}
 
-			PixelShaderInput input;
-			input.TexCoord = ComputeValueFromBarycentric(barycentric, vertices[0].TexCoord, vertices[1].TexCoord, vertices[2].TexCoord);
-			input.Normal = ComputeValueFromBarycentric(barycentric, vertices[0].Normal, vertices[1].Normal, vertices[2].Normal).GetSafeNormal();
-			input.Colour = params.Colour;
-
-			const PixelShaderOutput output = shader.PixelShader(input, constants);
-
-			context.Canvas->SetPixel(point2D, output.Colour);
-			context.DepthBuffer->Set(point2D, depthBufferVal);
+			const Colour output = shader.ExecuteFragmentShader(barycentric, vertexIndexA, vertexIndexB, vertexIndexC);
+			if (output.A > 0)
+			{
+				context.Canvas->SetPixel(point2D, output);
+				context.DepthBuffer->Set(point2D, depthBufferVal);
+			}
 		}
 	}
 }
 
-void TV::Renderer::DrawModel(const Model& model, const RenderContext& context, const RenderParams& params)
+void TV::Renderer::DrawModel(const Model& model, const RenderContext& context, IShader& shader)
 {
+	if (!context.IsValid())
+	{
+		return;
+	}
+
+	shader.Init(model.NumVertices());
+
+	for (int32 vertexIndex = 0; vertexIndex != model.NumVertices(); ++vertexIndex)
+	{
+		shader.ExecuteVertexShader(model.GetVertex(vertexIndex));
+	}
+
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
 	{
-		Model::Tri tri = model.GetTri(triIndex);
-		DrawTriangle(context, params, tri.Vertices[0], tri.Vertices[1], tri.Vertices[2]);
+		const Model::Tri& tri = model.GetTri(triIndex);
+		DrawTriangle(context, shader, tri.VertexIndex[0], tri.VertexIndex[1], tri.VertexIndex[2]);
 	}
 }

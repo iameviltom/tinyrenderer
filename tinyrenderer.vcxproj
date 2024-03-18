@@ -156,6 +156,7 @@
     <ClInclude Include="Source\Renderer\Drawing.h" />
     <ClInclude Include="Source\Renderer\ICanvas.h" />
     <ClInclude Include="Source\Renderer\Shader.h" />
+    <ClInclude Include="Source\Renderer\Vertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

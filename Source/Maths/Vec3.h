@@ -58,7 +58,7 @@ namespace TV
 				return *this;
 			}
 
-			TVec3<T>& operator *= (TVec3<T> factor)
+			TVec3<T>& operator *= (const TVec3<T>& factor)
 			{
 				X *= factor.X;
 				Y *= factor.Y;
@@ -72,7 +72,7 @@ namespace TV
 				return *this;
 			}
 
-			TVec3<T>& operator /= (const TVec3& divisor)
+			TVec3<T>& operator /= (const TVec3<T>& divisor)
 			{
 				*this *= divisor.GetReciprocal();
 				return *this;
@@ -144,7 +144,7 @@ namespace TV
 		}
 
 		template<class T>
-		inline [[nodiscard]] TVec3<T> operator * (const TVec3<T>& vector, float factor)
+		inline [[nodiscard]] TVec3<T> operator * (const TVec3<T>& vector, T factor)
 		{
 			TVec3<T> vec(vector);
 			vec *= factor;
@@ -152,23 +152,7 @@ namespace TV
 		}
 
 		template<class T>
-		inline [[nodiscard]] TVec3<T> operator * (const TVec3<T>& vector, const TVec3<T>& factor)
-		{
-			TVec3<T> vec(vector);
-			vec *= factor;
-			return vec;
-		}
-
-		template<class T>
-		inline [[nodiscard]] TVec3<T> operator / (const TVec3<T>& vector, float divisor)
-		{
-			TVec3<T> vec(vector);
-			vec /= divisor;
-			return vec;
-		}
-
-		template<class T>
-		inline [[nodiscard]] TVec3<T> operator / (const TVec3<T>& vector, const TVec3<T>& divisor)
+		inline [[nodiscard]] TVec3<T> operator / (const TVec3<T>& vector, T divisor)
 		{
 			TVec3<T> vec(vector);
 			vec /= divisor;

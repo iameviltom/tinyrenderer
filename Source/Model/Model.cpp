@@ -16,10 +16,26 @@ bool Model::LoadWavefrontFile(const char* FileName)
 		return false;
 	}
 
-	Positions.clear();
-	TexCoords.clear();
-	Normals.clear();
-	Tris.clear();
+	std::vector<Vec3f> positions;
+	std::vector<Vec2f> texCoords;
+	std::vector<Vec3f> normals;
+
+	struct VertexRef
+	{
+		int32 PosIndex = 0;
+		int32 TexCoordIndex = 0;
+		int32 NormalIndex = 0;
+
+		bool operator == (const VertexRef& other) const
+		{
+			return PosIndex == other.PosIndex && TexCoordIndex == other.TexCoordIndex && NormalIndex == other.NormalIndex;
+		}
+	};
+	struct TriRef
+	{
+		VertexRef Vertices[3];
+	};
+	std::vector<TriRef> tris;
 
 	_Min = Vec3f(FLT_MAX);
 	_Max = Vec3f(FLT_MAX * -1.f);
@@ -39,7 +55,7 @@ bool Model::LoadWavefrontFile(const char* FileName)
 			{
 				iss >> v.Raw[i];
 			}
-			Positions.push_back(v);
+			positions.push_back(v);
 
 			_Min = GetMin(_Min, v);
 			_Max = GetMax(_Max, v);
@@ -54,7 +70,7 @@ bool Model::LoadWavefrontFile(const char* FileName)
 			{
 				iss >> texCoord.Raw[i];
 			}
-			TexCoords.push_back(texCoord);
+			texCoords.push_back(texCoord);
 		}
 		else if (!line.compare(0, 3, "vn "))
 		{
@@ -66,7 +82,7 @@ bool Model::LoadWavefrontFile(const char* FileName)
 			{
 				iss >> normal.Raw[i];
 			}
-			Normals.push_back(normal);
+			normals.push_back(normal);
 		}
 		else if (!line.compare(0, 2, "f "))
 		{
@@ -84,42 +100,55 @@ bool Model::LoadWavefrontFile(const char* FileName)
 				--tri.Vertices[i].TexCoordIndex;
 				--tri.Vertices[i].NormalIndex;
 			}
-			Tris.push_back(tri);
+			tris.push_back(tri);
 		}
+	}
+
+	// now convert to more standard format with vertex data grouped together
+	std::vector<VertexRef> uniqueVertices;
+	for (const TriRef& triRef : tris)
+	{
+		Tri tri;
+
+		for (int32 triPointIndex = 0; triPointIndex != 3; ++triPointIndex)
+		{
+			const VertexRef& vertRef = triRef.Vertices[triPointIndex];
+
+			// check if vertex already exists
+			int32 index = -1;
+			for (int32 existingIndex = 0; existingIndex != uniqueVertices.size(); ++existingIndex)
+			{
+				if (uniqueVertices[existingIndex] == vertRef)
+				{
+					index = existingIndex;
+					break;
+				}
+			}
+			if (index == -1)
+			{
+				index = (int32)uniqueVertices.size();
+				uniqueVertices.push_back(vertRef);
+			}
+
+			tri.VertexIndex[triPointIndex] = index;
+		}
+
+		Triangles.push_back(tri);
+	}
+	for (const VertexRef& uniqueVertex : uniqueVertices)
+	{
+		Vertex vertex;
+		vertex.Position = positions[uniqueVertex.PosIndex];
+		vertex.TexCoord = texCoords[uniqueVertex.TexCoordIndex];
+		vertex.Normal = normals[uniqueVertex.NormalIndex];
+		Vertices.push_back(vertex);
 	}
 
 	return IsValid();
 }
 
-TV::Maths::Vec3f Model::CalculateNormal(int32 index) const
+TV::Maths::Vec3f Model::CalculateNormal(int32 triIndex) const
 {
-	const Tri tri = GetTri(index);
-	return TV::Renderer::CalculateNormal(tri.Vertices[0], tri.Vertices[1], tri.Vertices[2]);
-}
-
-TV::Renderer::Model::Tri Model::GetTri(int32 index) const
-{
-	Tri tri;
-
-	const TriRef& triRef = Tris[index];
-	for (int32 i = 0; i != 3; ++i)
-	{
-		const VertexRef& vertRef = triRef.Vertices[i];
-		Vertex& vert = tri.Vertices[i];
-
-		vert.Position = Positions[vertRef.PosIndex];
-		vert.TexCoord = TexCoords[vertRef.TexCoordIndex];
-		vert.Normal = Normals[vertRef.NormalIndex];
-	}
-
-	return tri;
-}
-
-TV::Maths::Vec3f TV::Renderer::CalculateNormal(const Vertex& a, const Vertex& b, const Vertex& c)
-{
-	const Vec3f ba = b.Position - a.Position;
-	const Vec3f ca = c.Position - a.Position;
-
-	const Vec3f crossProduct = GetCrossProduct(ca, ba);
-	return crossProduct.GetSafeNormal();
+	const Tri& tri = GetTri(triIndex);
+	return TV::Renderer::CalculateNormal(GetVertex(tri.VertexIndex[0]), GetVertex(tri.VertexIndex[1]), GetVertex(tri.VertexIndex[2]));
 }
