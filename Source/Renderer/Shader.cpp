@@ -1,32 +1,43 @@
 #include "Shader.h"
 
-#include "ICanvas.h"
-#include "../Maths/Geometry.h"
-
-TV::Renderer::VertexOutput_SimpleLitDiffuse TV::Renderer::VertexOutput_SimpleLitDiffuse::Interpolate(const Vec3f& barycentricCoord, const VertexOutput_SimpleLitDiffuse& a, const VertexOutput_SimpleLitDiffuse& b, const VertexOutput_SimpleLitDiffuse& c)
+TV::Renderer::ShaderImplementation_Example::VertexOutput TV::Renderer::ShaderImplementation_Example::VertexShader(const IShader& shader, const Vertex& input) const
 {
-	VertexOutput_SimpleLitDiffuse output;
-	output.Position = ComputeValueFromBarycentric(barycentricCoord, a.Position, b.Position, c.Position);
-	output.Normal = ComputeValueFromBarycentric(barycentricCoord, a.Normal, b.Normal, c.Normal).GetSafeNormal();
-	output.TexCoord = ComputeValueFromBarycentric(barycentricCoord, a.TexCoord, b.TexCoord, c.TexCoord);
+	VertexOutput output;
+
+	const Vec3f worldSpacePosition = shader.ModelMatrix.TransformPosition(input.Position);
+	const Vec3f cameraSpacePosition = shader.ViewMatrix.TransformPosition(worldSpacePosition);
+	output.Position = shader.ProjectionMatrix.TransformVector4(Vec4f(cameraSpacePosition, 1.f));
+
 	return output;
 }
 
-TV::Renderer::VertexOutput_SimpleLitDiffuse TV::Renderer::Shader_SimpleLitDiffuse::VertexShader(const Vertex& input)
+TV::Renderer::ShaderImplementation_Example::VertexOutput TV::Renderer::ShaderImplementation_Example::Interpolate(const Vec3f& barycentricCoord, const VertexOutput& a, const VertexOutput& b, const VertexOutput& c) const
 {
-	VertexOutput_SimpleLitDiffuse output;
+	VertexOutput output;
+	output.Position = ComputeValueFromBarycentric(barycentricCoord, a.Position, b.Position, c.Position);
+	return output;
+}
+
+TV::Maths::Colour TV::Renderer::ShaderImplementation_Example::FragmentShader(const IShader& shader, const VertexOutput& input) const
+{
+	return Colour(255, 255, 255, 255);
+}
+
+TV::Renderer::ShaderImplementation_SimpleLitDiffuse::VertexOutput TV::Renderer::ShaderImplementation_SimpleLitDiffuse::VertexShader(const IShader& shader, const Vertex& input) const
+{
+	VertexOutput output;
 
 	// output position in clip space
 	{
-		const Vec3f worldSpacePosition = ModelMatrix.TransformPosition(input.Position);
-		const Vec3f cameraSpacePosition = ViewMatrix.TransformPosition(worldSpacePosition);
-		output.Position = ProjectionMatrix.TransformVector4(Vec4f(cameraSpacePosition, 1.f));
+		const Vec3f worldSpacePosition = shader.ModelMatrix.TransformPosition(input.Position);
+		const Vec3f cameraSpacePosition = shader.ViewMatrix.TransformPosition(worldSpacePosition);
+		output.Position = shader.ProjectionMatrix.TransformVector4(Vec4f(cameraSpacePosition, 1.f));
 	}
 
 	// output normal in camera space
 	{
-		const Vec3f worldSpaceNormal = ModelMatrix.TransformVector(input.Normal);
-		output.Normal = ViewMatrix.TransformVector(worldSpaceNormal);
+		const Vec3f worldSpaceNormal = shader.ModelMatrix.TransformVector(input.Normal);
+		output.Normal = shader.ViewMatrix.TransformVector(worldSpaceNormal);
 		output.Normal = output.Normal.GetSafeNormal();
 	}
 
@@ -36,7 +47,16 @@ TV::Renderer::VertexOutput_SimpleLitDiffuse TV::Renderer::Shader_SimpleLitDiffus
 	return output;
 }
 
-TV::Maths::Colour TV::Renderer::Shader_SimpleLitDiffuse::FragmentShader(const VertexOutput_SimpleLitDiffuse& input)
+TV::Renderer::ShaderImplementation_SimpleLitDiffuse::VertexOutput TV::Renderer::ShaderImplementation_SimpleLitDiffuse::Interpolate(const Vec3f& barycentricCoord, const VertexOutput& a, const VertexOutput& b, const VertexOutput& c) const
+{
+	VertexOutput output;
+	output.Position = ComputeValueFromBarycentric(barycentricCoord, a.Position, b.Position, c.Position);
+	output.Normal = ComputeValueFromBarycentric(barycentricCoord, a.Normal, b.Normal, c.Normal).GetSafeNormal();
+	output.TexCoord = ComputeValueFromBarycentric(barycentricCoord, a.TexCoord, b.TexCoord, c.TexCoord);
+	return output;
+}
+
+TV::Maths::Colour TV::Renderer::ShaderImplementation_SimpleLitDiffuse::FragmentShader(const IShader& shader, const VertexOutput& input) const
 {
 	Colour output;
 

@@ -74,8 +74,8 @@ int main(int argc, char** argv)
 		const Vec3f lightDir(1.f, 1.f, 1.f);
 		shader.LightDirection = shader.ViewMatrix.TransformVector(lightDir);
 
-		DrawModel(model, context, shader);
-		DrawModelWireframe(model, context, shader, white);
+		shader.DrawModel(model, context);
+		shader.DrawModelWireframe(model, context, white);
 	}
 
 	return 0;
