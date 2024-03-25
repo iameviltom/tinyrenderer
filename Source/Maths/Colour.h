@@ -31,7 +31,7 @@ namespace TV
 					Raw[index] = bytes[index];
 				}
 			}
-			Colour(uint8 r, uint8 g, uint8 b, uint8 a = 255) : B(b), G(g), R(r), A(a) {}
+			constexpr Colour(uint8 r, uint8 g, uint8 b, uint8 a = 255) : B(b), G(g), R(r), A(a) {}
 
 			[[nodiscard]] Colour Scaled(double scale, bool bScaleAlpha = false) const
 			{

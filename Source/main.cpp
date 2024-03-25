@@ -2,44 +2,28 @@
 
 #include "Maths/Vec2.h"
 #include "Model/Model.h"
-#include "Renderer/Drawing.h"
 #include "Renderer/DepthBuffer.h"
 #include "Renderer/Shader.h"
+#include "Shaders/Shader_SimpleLitDiffuse.h"
 
 using namespace TV;
 using namespace Maths;
 using namespace Renderer;
 
-const Colour white = Colour(255, 255, 255, 255);
-const Colour red = Colour(255, 0, 0, 255);
-const Colour green = Colour(0, 255, 0, 255);
+constexpr Colour white = Colour(255, 255, 255, 255);
+constexpr Colour red = Colour(255, 0, 0, 255);
+constexpr Colour green = Colour(0, 255, 0, 255);
 
 int main(int argc, char** argv)
 {
-	class ScopedImage
-	{
-	public:
-		ScopedImage(const Vec2i& size) : Image(size.X, size.Y, TGAImage::RGB) {}
-		~ScopedImage()
-		{
-			Image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
-			Image.write_tga_file("output.tga");
-		}
-
-		TGAImage Image;
-	};
-
 	Model model;
 	if (model.LoadWavefrontFile("Content/african_head.obj"))
 	{
-		ScopedImage image(Vec2i(600, 800));
-		DepthBuffer depthBuffer(image.Image.GetSize());
+		constexpr int32 imageHeight = 800;
+		constexpr int32 imageWidth = 600;
+		constexpr float aspectRatio = imageWidth / (float)imageHeight;
 
-		RenderContext context;
-		context.Canvas = &image.Image;
-		context.DepthBuffer = &depthBuffer;
-
-		Shader_SimpleLitDiffuse shader;
+		TV::Shaders::Shader_SimpleLitDiffuse shader;
 
 		// build camera matrix
 		const Vec3f cameraPos(1.f, 1.f, 3.f);
@@ -53,12 +37,12 @@ int main(int argc, char** argv)
 		if (bOrthographic)
 		{
 			constexpr float orthoWidth = 2.f;
-			shader.ProjectionMatrix = Matrix4x4f::MakeOrthographicProjection(orthoWidth, image.Image.GetAspectRatio(), nearclip, farclip);
+			shader.ProjectionMatrix = Matrix4x4f::MakeOrthographicProjection(orthoWidth, aspectRatio, nearclip, farclip);
 		}
 		else
 		{
 			constexpr float verticalFieldOfView = GetRadiansFromDegrees(30.f);
-			shader.ProjectionMatrix = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, image.Image.GetAspectRatio(), nearclip, farclip);
+			shader.ProjectionMatrix = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, aspectRatio, nearclip, farclip);
 		}
 
 		TGAImage diffuse;
@@ -74,8 +58,31 @@ int main(int argc, char** argv)
 		const Vec3f lightDir(1.f, 1.f, 1.f);
 		shader.LightDirection = shader.ViewMatrix.TransformVector(lightDir);
 
-		shader.DrawModel(model, context);
-		shader.DrawModelWireframe(model, context, white);
+		{
+			TGAImage image(imageWidth, imageHeight, TGAImage::RGB);
+			DepthBuffer depthBuffer(image.GetSize());
+
+			RenderContext context;
+			context.Canvas = &image;
+			context.DepthBuffer = &depthBuffer;
+
+			shader.DrawModel(model, context);
+
+			image.flip_vertically();
+			image.write_tga_file("output.tga");
+		}
+
+		{
+			TGAImage image(imageWidth, imageHeight, TGAImage::RGB);
+
+			RenderContext context;
+			context.Canvas = &image;
+
+			shader.DrawModelWireframe(model, context, white);
+
+			image.flip_vertically();
+			image.write_tga_file("output_wireframe.tga");
+		}
 	}
 
 	return 0;
