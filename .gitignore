@@ -35,6 +35,7 @@
 *.filters
 /.vs
 output.tga
+output_wireframe.tga
 /x64
 *.bak
 /tinyrenderer/x64
