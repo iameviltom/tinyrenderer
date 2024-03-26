@@ -1,15 +1,9 @@
 #include "Drawing.h"
 
 #include "ICanvas.h"
-#include "../Model/Model.h"
 #include "../Maths/Types.h"
 #include "../Maths/Geometry.h"
-#include "DepthBuffer.h"
-#include "../Image/TgaImage.h"
-#include "../Maths/Matrix4x4.h"
-#include "../Maths/Vec4.h"
 #include "../Maths/Maths.h"
-#include "Shader.h"
 
 void TV::Renderer::DrawLine(Vec2i start, Vec2i end, ICanvas& canvas, const Colour& colour)
 {

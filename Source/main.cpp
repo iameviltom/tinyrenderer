@@ -1,9 +1,8 @@
 #include "Image/TgaImage.h"
 
-#include "Maths/Vec2.h"
 #include "Model/Model.h"
 #include "Renderer/DepthBuffer.h"
-#include "Renderer/Shader.h"
+#include "Renderer/Rasterizer.h"
 #include "Shaders/Shader_SimpleLitDiffuse.h"
 
 using namespace TV;
@@ -23,12 +22,12 @@ int main(int argc, char** argv)
 		constexpr int32 imageWidth = 600;
 		constexpr float aspectRatio = imageWidth / (float)imageHeight;
 
-		TV::Shaders::Shader_SimpleLitDiffuse shader;
+		TV::Shaders::Rasterizer_SimpleLitDiffuse rasterizer;
 
 		// build camera matrix
 		const Vec3f cameraPos(1.f, 1.f, 3.f);
 		const Matrix4x4f cameraMtx = Matrix4x4f::MakeLookAt(cameraPos, Vec3f(), Vec3f::UpVector);
-		shader.ViewMatrix = cameraMtx.GetInverse();
+		rasterizer.ViewMatrix = cameraMtx.GetInverse();
 
 		// build projection matrix
 		constexpr float nearclip = 0.1f;
@@ -37,12 +36,12 @@ int main(int argc, char** argv)
 		if (bOrthographic)
 		{
 			constexpr float orthoWidth = 2.f;
-			shader.ProjectionMatrix = Matrix4x4f::MakeOrthographicProjection(orthoWidth, aspectRatio, nearclip, farclip);
+			rasterizer.ProjectionMatrix = Matrix4x4f::MakeOrthographicProjection(orthoWidth, aspectRatio, nearclip, farclip);
 		}
 		else
 		{
 			constexpr float verticalFieldOfView = GetRadiansFromDegrees(30.f);
-			shader.ProjectionMatrix = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, aspectRatio, nearclip, farclip);
+			rasterizer.ProjectionMatrix = Matrix4x4f::MakePerspectiveProjection(verticalFieldOfView, aspectRatio, nearclip, farclip);
 		}
 
 		TGAImage diffuse;
@@ -50,13 +49,13 @@ int main(int argc, char** argv)
 		diffuse.flip_vertically();
 		if (bDiffuseValid)
 		{
-			shader.Diffuse = &diffuse;
+			rasterizer.Diffuse = &diffuse;
 		}
 
-		shader.BaseColour = white;
+		rasterizer.BaseColour = white;
 
 		const Vec3f lightDir(1.f, 1.f, 1.f);
-		shader.LightDirection = shader.ViewMatrix.TransformVector(lightDir);
+		rasterizer.LightDirection = rasterizer.ViewMatrix.TransformVector(lightDir);
 
 		{
 			TGAImage image(imageWidth, imageHeight, TGAImage::RGB);
@@ -66,7 +65,7 @@ int main(int argc, char** argv)
 			context.Canvas = &image;
 			context.DepthBuffer = &depthBuffer;
 
-			shader.DrawModel(model, context);
+			rasterizer.DrawModel(model, context);
 
 			image.flip_vertically();
 			image.write_tga_file("output.tga");
@@ -78,7 +77,7 @@ int main(int argc, char** argv)
 			RenderContext context;
 			context.Canvas = &image;
 
-			shader.DrawModelWireframe(model, context, white);
+			rasterizer.DrawModelWireframe(model, context, white);
 
 			image.flip_vertically();
 			image.write_tga_file("output_wireframe.tga");

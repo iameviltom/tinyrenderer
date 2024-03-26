@@ -138,7 +138,7 @@
     <ClCompile Include="Source\Model\Model.cpp" />
     <ClCompile Include="Source\Renderer\DepthBuffer.cpp" />
     <ClCompile Include="Source\Renderer\Drawing.cpp" />
-    <ClCompile Include="Source\Renderer\Shader.cpp" />
+    <ClCompile Include="Source\Renderer\Rasterizer.cpp" />
     <ClCompile Include="Source\Shaders\Shader_Example.cpp" />
     <ClCompile Include="Source\Shaders\Shader_SimpleLitDiffuse.cpp" />
   </ItemGroup>
@@ -157,7 +157,7 @@
     <ClInclude Include="Source\Renderer\DepthBuffer.h" />
     <ClInclude Include="Source\Renderer\Drawing.h" />
     <ClInclude Include="Source\Renderer\ICanvas.h" />
-    <ClInclude Include="Source\Renderer\Shader.h" />
+    <ClInclude Include="Source\Renderer\Rasterizer.h" />
     <ClInclude Include="Source\Renderer\Vertex.h" />
     <ClInclude Include="Source\Shaders\Shader_Example.h" />
     <ClInclude Include="Source\Shaders\Shader_SimpleLitDiffuse.h" />

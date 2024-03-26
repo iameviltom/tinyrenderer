@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Renderer/Shader.h"
+#include "../Renderer/Rasterizer.h"
 
 namespace TV
 {
@@ -9,7 +9,7 @@ namespace TV
 		using namespace Maths;
 		using namespace Renderer;
 
-		class ShaderImplementation_SimpleLitDiffuse
+		class Shader_SimpleLitDiffuse
 		{
 		public:
 			Vec3f LightDirection; // camera space
@@ -22,11 +22,11 @@ namespace TV
 				Vec3f Normal; // camera space
 				Vec2f TexCoord;
 			};
-			VertexOutput VertexShader(const IShader& shader, const Vertex& input) const;
+			VertexOutput VertexShader(const IRasterizer& shader, const Vertex& input) const;
 			VertexOutput Interpolate(const Vec3f& barycentricCoord, const VertexOutput& a, const VertexOutput& b, const VertexOutput& c) const;
-			Colour FragmentShader(const IShader& shader, const VertexOutput& input) const;
+			Colour FragmentShader(const IRasterizer& shader, const VertexOutput& input) const;
 		};
 
-		using Shader_SimpleLitDiffuse = TShader<ShaderImplementation_SimpleLitDiffuse>;
+		using Rasterizer_SimpleLitDiffuse = TRasterizer<Shader_SimpleLitDiffuse>;
 	}
 }

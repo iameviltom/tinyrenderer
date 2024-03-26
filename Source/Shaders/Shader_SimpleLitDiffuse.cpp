@@ -1,6 +1,6 @@
 #include "Shader_SimpleLitDiffuse.h"
 
-TV::Shaders::ShaderImplementation_SimpleLitDiffuse::VertexOutput TV::Shaders::ShaderImplementation_SimpleLitDiffuse::VertexShader(const IShader& shader, const Vertex& input) const
+TV::Shaders::Shader_SimpleLitDiffuse::VertexOutput TV::Shaders::Shader_SimpleLitDiffuse::VertexShader(const IRasterizer& shader, const Vertex& input) const
 {
 	VertexOutput output;
 
@@ -24,7 +24,7 @@ TV::Shaders::ShaderImplementation_SimpleLitDiffuse::VertexOutput TV::Shaders::Sh
 	return output;
 }
 
-TV::Shaders::ShaderImplementation_SimpleLitDiffuse::VertexOutput TV::Shaders::ShaderImplementation_SimpleLitDiffuse::Interpolate(const Vec3f& barycentricCoord, const VertexOutput& a, const VertexOutput& b, const VertexOutput& c) const
+TV::Shaders::Shader_SimpleLitDiffuse::VertexOutput TV::Shaders::Shader_SimpleLitDiffuse::Interpolate(const Vec3f& barycentricCoord, const VertexOutput& a, const VertexOutput& b, const VertexOutput& c) const
 {
 	VertexOutput output;
 	output.Position = ComputeValueFromBarycentric(barycentricCoord, a.Position, b.Position, c.Position);
@@ -33,7 +33,7 @@ TV::Shaders::ShaderImplementation_SimpleLitDiffuse::VertexOutput TV::Shaders::Sh
 	return output;
 }
 
-TV::Maths::Colour TV::Shaders::ShaderImplementation_SimpleLitDiffuse::FragmentShader(const IShader& shader, const VertexOutput& input) const
+TV::Maths::Colour TV::Shaders::Shader_SimpleLitDiffuse::FragmentShader(const IRasterizer& shader, const VertexOutput& input) const
 {
 	Colour output;
 

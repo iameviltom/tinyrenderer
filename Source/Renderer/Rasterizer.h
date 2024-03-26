@@ -28,7 +28,7 @@ namespace TV
 			bool IsValid() const { return Canvas != nullptr; }
 		};
 
-		class IShader
+		class IRasterizer
 		{
 		public:
 			Matrix4x4f ModelMatrix;
@@ -37,13 +37,14 @@ namespace TV
 
 		public:
 			virtual void DrawModel(const Model& model, const RenderContext& context) = 0;
+			virtual void DrawModelWireframe(const Model& model, const RenderContext& context, const Colour& colour) = 0;
 		};
 
-		template<class TShaderImplementation>
-		class TShader : public IShader, public TShaderImplementation
+		template<class TShader>
+		class TRasterizer : public IRasterizer, public TShader
 		{
 		public:
-			typedef typename TShaderImplementation::VertexOutput VertexOutput;
+			typedef typename TShader::VertexOutput VertexOutput;
 
 			virtual void DrawModel(const Model& model, const RenderContext& context) final;
 			virtual void DrawModelWireframe(const Model& model, const RenderContext& context, const Colour& colour) final;
@@ -53,8 +54,8 @@ namespace TV
 	}
 }
 
-template<class TShaderImplementation>
-void TV::Renderer::TShader<TShaderImplementation>::DrawModel(const Model& model, const RenderContext& context)
+template<class TShader>
+void TV::Renderer::TRasterizer<TShader>::DrawModel(const Model& model, const RenderContext& context)
 {
 	if (!context.IsValid())
 	{
@@ -66,7 +67,7 @@ void TV::Renderer::TShader<TShaderImplementation>::DrawModel(const Model& model,
 
 	for (int32 vertexIndex = 0; vertexIndex != model.NumVertices(); ++vertexIndex)
 	{
-		vertexData.push_back(TShaderImplementation::VertexShader(*this, model.GetVertex(vertexIndex)));
+		vertexData.push_back(TShader::VertexShader(*this, model.GetVertex(vertexIndex)));
 	}
 
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
@@ -79,20 +80,20 @@ void TV::Renderer::TShader<TShaderImplementation>::DrawModel(const Model& model,
 	}
 }
 
-template<class TShaderImplementation>
-void TV::Renderer::TShader<TShaderImplementation>::DrawModelWireframe(const Model& model, const RenderContext& context, const Colour& colour)
+template<class TShader>
+void TV::Renderer::TRasterizer<TShader>::DrawModelWireframe(const Model& model, const RenderContext& context, const Colour& colour)
 {
 	if (!context.IsValid())
 	{
 		return;
 	}
 
-	std::vector<TShaderImplementation::VertexOutput> vertexData;
+	std::vector<TShader::VertexOutput> vertexData;
 	vertexData.reserve(model.NumVertices());
 
 	for (int32 vertexIndex = 0; vertexIndex != model.NumVertices(); ++vertexIndex)
 	{
-		vertexData.push_back(TShaderImplementation::VertexShader(*this, model.GetVertex(vertexIndex)));
+		vertexData.push_back(TShader::VertexShader(*this, model.GetVertex(vertexIndex)));
 	}
 
 	for (int triIndex = 0; triIndex != model.NumTris(); ++triIndex)
@@ -118,8 +119,8 @@ void TV::Renderer::TShader<TShaderImplementation>::DrawModelWireframe(const Mode
 	}
 }
 
-template<class TShaderImplementation>
-void TV::Renderer::TShader<TShaderImplementation>::DrawTriangle(const RenderContext& context, const VertexOutput& vertexA, const VertexOutput& vertexB, const VertexOutput& vertexC)
+template<class TShader>
+void TV::Renderer::TRasterizer<TShader>::DrawTriangle(const RenderContext& context, const VertexOutput& vertexA, const VertexOutput& vertexB, const VertexOutput& vertexC)
 {
 	check(context.IsValid());
 
@@ -178,8 +179,8 @@ void TV::Renderer::TShader<TShaderImplementation>::DrawTriangle(const RenderCont
 				}
 			}
 
-			const VertexOutput input = TShaderImplementation::Interpolate(barycentric, vertexA, vertexB, vertexC);
-			const Colour output = TShaderImplementation::FragmentShader(*this, input);
+			const VertexOutput input = TShader::Interpolate(barycentric, vertexA, vertexB, vertexC);
+			const Colour output = TShader::FragmentShader(*this, input);
 			if (output.A > 0)
 			{
 				context.Canvas->SetPixel(point2D, output);

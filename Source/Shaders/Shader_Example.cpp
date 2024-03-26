@@ -1,6 +1,6 @@
 #include "Shader_Example.h"
 
-TV::Shaders::ShaderImplementation_Example::VertexOutput TV::Shaders::ShaderImplementation_Example::VertexShader(const IShader& shader, const Vertex& input) const
+TV::Shaders::Shader_Example::VertexOutput TV::Shaders::Shader_Example::VertexShader(const IRasterizer& shader, const Vertex& input) const
 {
 	VertexOutput output;
 
@@ -11,14 +11,14 @@ TV::Shaders::ShaderImplementation_Example::VertexOutput TV::Shaders::ShaderImple
 	return output;
 }
 
-TV::Shaders::ShaderImplementation_Example::VertexOutput TV::Shaders::ShaderImplementation_Example::Interpolate(const Vec3f& barycentricCoord, const VertexOutput& a, const VertexOutput& b, const VertexOutput& c) const
+TV::Shaders::Shader_Example::VertexOutput TV::Shaders::Shader_Example::Interpolate(const Vec3f& barycentricCoord, const VertexOutput& a, const VertexOutput& b, const VertexOutput& c) const
 {
 	VertexOutput output;
 	output.Position = ComputeValueFromBarycentric(barycentricCoord, a.Position, b.Position, c.Position);
 	return output;
 }
 
-TV::Maths::Colour TV::Shaders::ShaderImplementation_Example::FragmentShader(const IShader& shader, const VertexOutput& input) const
+TV::Maths::Colour TV::Shaders::Shader_Example::FragmentShader(const IRasterizer& shader, const VertexOutput& input) const
 {
 	return Colour(255, 255, 255, 255);
 }
