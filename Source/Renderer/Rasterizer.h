@@ -26,6 +26,7 @@ namespace TV
 			ICanvas* Canvas = nullptr;
 
 			bool IsValid() const { return Canvas != nullptr; }
+			void Validate() const;
 		};
 
 		class IRasterizer
@@ -61,6 +62,7 @@ void TV::Renderer::TRasterizer<TShader>::DrawModel(const Model& model, const Ren
 	{
 		return;
 	}
+	context.Validate();
 
 	std::vector<VertexOutput> vertexData;
 	vertexData.reserve(model.NumVertices());
@@ -87,6 +89,7 @@ void TV::Renderer::TRasterizer<TShader>::DrawModelWireframe(const Model& model, 
 	{
 		return;
 	}
+	context.Validate();
 
 	std::vector<TShader::VertexOutput> vertexData;
 	vertexData.reserve(model.NumVertices());
