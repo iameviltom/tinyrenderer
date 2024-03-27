@@ -39,3 +39,5 @@ output_wireframe.tga
 /x64
 *.bak
 /tinyrenderer/x64
+framebuffer.tga
+depthbuffer.tga

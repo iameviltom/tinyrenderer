@@ -21,9 +21,9 @@ namespace TV
 				T Raw[2];
 			};
 
-			TVec2() : X(0), Y(0) {}
-			explicit TVec2(T inVal) : X(inVal), Y(inVal) {}
-			TVec2(T inX, T inY) : X(inX), Y(inY) {}
+			constexpr TVec2() : X(0), Y(0) {}
+			explicit constexpr TVec2(T inVal) : X(inVal), Y(inVal) {}
+			constexpr TVec2(T inX, T inY) : X(inX), Y(inY) {}
 
 			bool operator == (const TVec2& other) const
 			{

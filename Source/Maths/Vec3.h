@@ -23,9 +23,9 @@ namespace TV
 				T Raw[3];
 			};
 
-			TVec3() : X(0), Y(0), Z(0) {}
-			explicit TVec3(T inVal) : X(inVal), Y(inVal), Z(inVal) {}
-			TVec3(T inX, T inY, T inZ) : X(inX), Y(inY), Z(inZ) {}
+			constexpr TVec3() : X(0), Y(0), Z(0) {}
+			explicit constexpr TVec3(T inVal) : X(inVal), Y(inVal), Z(inVal) {}
+			constexpr TVec3(T inX, T inY, T inZ) : X(inX), Y(inY), Z(inZ) {}
 
 			static const TVec3<T> UpVector;
 

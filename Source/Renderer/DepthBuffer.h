@@ -22,6 +22,9 @@ namespace TV
 			}
 			~DepthBuffer() { delete Buffer; }
 
+			DepthBuffer(const DepthBuffer&) = delete;
+			DepthBuffer& operator = (const DepthBuffer&) = delete;
+
 			void Set(const Vec2i& point, BufferType value)
 			{
 				ValidatePoint(point);
@@ -32,6 +35,8 @@ namespace TV
 				ValidatePoint(point);
 				return Buffer[point.X + point.Y * Size.X];
 			}
+
+			const Vec2i& GetSize() const { return Size; }
 
 			void ClearBuffer()
 			{
